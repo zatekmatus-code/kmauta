@@ -29,11 +29,11 @@
             <form onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Prihlasovacie meno</label>
-                    <input type="text" id="loginUser" required placeholder="Prihlasovacie meno" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <input type="text" id="loginUser" required placeholder="admin / sklad" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Heslo</label>
-                    <input type="password" id="loginPass" required placeholder="heslo" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <input type="password" id="loginPass" required placeholder="••••••••" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
                 </div>
                 <div id="loginError" class="text-xs text-rose-500 font-semibold hidden text-center">Nesprávne meno alebo heslo!</div>
                 <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg text-sm shadow transition mt-2">
@@ -56,6 +56,9 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-2">
+                    <button onclick="fetchCloudData()" id="syncBtn" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded border border-slate-700 flex items-center gap-1 transition" title="Obnoviť dáta zo servera">
+                        <i class="fa-solid fa-rotate" id="syncIcon"></i> Obnoviť
+                    </button>
                     <button onclick="exportData()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded border border-slate-700 flex items-center gap-1 transition">
                         <i class="fa-solid fa-download"></i> Export
                     </button>
@@ -74,6 +77,11 @@
         </header>
 
         <main class="max-w-7xl mx-auto px-4 pt-6">
+            <!-- Indikátor ukladania/synchros -->
+            <div id="syncStatus" class="hidden mb-4 p-2 text-xs text-center rounded bg-blue-50 text-blue-700 border border-blue-200">
+                <i class="fa-solid fa-spinner fa-spin mr-1"></i> Prebieha synchronizácia s cloudovou databázou...
+            </div>
+
             <!-- Upozorňovací Banner -->
             <div id="alertBanner" class="hidden mb-6 p-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 shadow-sm">
                 <div class="flex items-start gap-3">
@@ -213,16 +221,19 @@
 
     <!-- LOGIKA A SCRIPT -->
     <script>
-        // ZOZNAM ÚČTOV
+        // ÚČTY
         const USERS = {
             "admin": "Podzavoz23!03",
             "sklad": "Podzavoz23!03"
         };
 
+        // KOLEKTÍVNA CLOUDOVÁ DATABÁZA (JSONBin API)
+        const API_URL = `https://api.jsonbin.io/v3/b/6706222be41b4d34e43fc08a`;
+        const MASTER_KEY = "$2a$10$wT28N4d3pOnA9bK5.7lEGuuGSp2m.C1LwK41oFm6BSp4v1S3bC31S";
+
         let vehicles = [];
         let currentFilter = 'all';
 
-        // Kontrola prihlásenia pri štarte
         window.addEventListener('DOMContentLoaded', () => {
             const loggedUser = localStorage.getItem('km_logged_user');
             if (loggedUser && USERS[loggedUser]) {
@@ -257,39 +268,73 @@
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('appScreen').classList.remove('hidden');
             document.getElementById('currentUserBadge').innerText = `Prihlásený: ${username}`;
-            loadData();
+            fetchCloudData();
         }
 
-        function loadData() {
-            const savedData = localStorage.getItem('km_vehicles_data');
-            if (savedData) {
-                try {
-                    vehicles = JSON.parse(savedData);
-                } catch(e) {
-                    console.error("Chyba pri načítaní dát", e);
+        // NAČÍTANIE Z CLOUDU
+        async function fetchCloudData() {
+            showSyncStatus(true);
+            const syncIcon = document.getElementById('syncIcon');
+            if (syncIcon) syncIcon.classList.add('fa-spin');
+
+            try {
+                // Načítanie z lokálneho pamäťového úložiska
+                const localData = localStorage.getItem('km_vehicles_data');
+                if (localData) {
+                    vehicles = JSON.parse(localData);
                 }
-            } else {
-                vehicles = [{
-                    id: '1',
-                    name: 'Škoda Fabia Combi',
-                    ecv: 'CA123AB',
-                    responsible: 'Matúš Zátek',
-                    stkDate: '2026-11-15',
-                    ekDate: '2026-11-15',
-                    dzSkDate: '2026-12-31',
-                    dzCzDate: '2026-10-25',
-                    serviceDate: '2026-12-01',
-                    currentKm: 145000,
-                    nextServiceKm: 150000,
-                    serviceNote: 'Zimné pneu, olej 5W-30'
-                }];
-                saveToLocalStorage();
+
+                // Pokus o načítanie z online cloud databázy
+                const response = await fetch(API_URL + '/latest', {
+                    headers: { 'X-Master-Key': MASTER_KEY }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.record && Array.isArray(result.record.vehicles) && result.record.vehicles.length > 0) {
+                        vehicles = result.record.vehicles;
+                        localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
+                    } else if (vehicles.length > 0) {
+                        // Ak je cloud prázdny, ale lokálne dáta existujú, nahrá lokálne do cloudu
+                        await saveCloudData();
+                    }
+                }
+            } catch(e) {
+                console.warn("Cloud zatiaľ nie je dosiahnuteľný, použijú sa lokálne dáta:", e);
+            } finally {
+                showSyncStatus(false);
+                if (syncIcon) syncIcon.classList.remove('fa-spin');
+                renderVehicles();
             }
-            renderVehicles();
         }
 
-        function saveToLocalStorage() {
+        // ULOŽENIE DO CLOUDU
+        async function saveCloudData() {
             localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
+            showSyncStatus(true);
+
+            try {
+                await fetch(API_URL, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': MASTER_KEY
+                    },
+                    body: JSON.stringify({ vehicles: vehicles })
+                });
+            } catch(e) {
+                console.error("Chyba pri ukladaní do cloudu:", e);
+            } finally {
+                showSyncStatus(false);
+            }
+        }
+
+        function showSyncStatus(show) {
+            const statusEl = document.getElementById('syncStatus');
+            if (statusEl) {
+                if (show) statusEl.classList.remove('hidden');
+                else statusEl.classList.add('hidden');
+            }
         }
 
         function getDaysDiff(dateString) {
@@ -485,7 +530,7 @@
             document.getElementById('vehicleModal').classList.remove('hidden');
         }
 
-        function saveVehicle(e) {
+        async function saveVehicle(e) {
             e.preventDefault();
             const id = document.getElementById('vehicleId').value;
             const vehicleData = {
@@ -510,16 +555,16 @@
                 vehicles.push(vehicleData);
             }
 
-            saveToLocalStorage();
             renderVehicles();
             closeModal();
+            await saveCloudData();
         }
 
-        function deleteVehicle(id) {
+        async function deleteVehicle(id) {
             if (confirm('Naozaj chcete vymazať toto vozidlo?')) {
                 vehicles = vehicles.filter(v => v.id !== id);
-                saveToLocalStorage();
                 renderVehicles();
+                await saveCloudData();
             }
         }
 
@@ -546,14 +591,14 @@
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
                     const imported = JSON.parse(e.target.result);
                     if (Array.isArray(imported)) {
                         vehicles = imported;
-                        saveToLocalStorage();
                         renderVehicles();
-                        alert('Dáta boli úspešne naimportované!');
+                        await saveCloudData();
+                        alert('Dáta boli úspešne naimportované a uložené do cloudu!');
                     } else {
                         alert('Súbor neobsahuje platný zoznam vozidiel.');
                     }
