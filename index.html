@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Správa Vozidiel - Cloud Sync</title>
+    <title>Správa Vozidiel - Google Cloud Sync</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -234,10 +234,8 @@
             "sklad": "Podzavoz23!03"
         };
 
-        // NOVÉ PLATNÉ A BEZPEČNÉ CLOUDOVÉ ÚLOŽISKO (JSONBin.io v3)
-        const BIN_ID = "6706222be41b4d34e43fc08a";
-        const API_KEY = "$2a$10$wT28N4d3pOnA9bK5.7lEGuuGSp2m.C1LwK41oFm6BSp4v1S3bC31S";
-        const CLOUD_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+        // VÁŠ SÚKROMNÝ GOOGLE APPS SCRIPT ENDPOINT
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjtrmwRfArDrlPNyd01FLqs8qNrY_SxoC6b7Xe28dmmNHod3IY2CeaL-b6C2O789AS/exec";
 
         let vehicles = [];
         let currentFilter = 'all';
@@ -287,40 +285,43 @@
             fetchCloudData();
         }
 
-        // NAČÍTANIE Z CLOUDU
+        // NAČÍTANIE Z GOOGLE SCRIPT CLOUDU
         async function fetchCloudData() {
             setCloudBadge('syncing', 'Synchronizujem...');
             const syncIcon = document.getElementById('syncIcon');
             if (syncIcon) syncIcon.classList.add('fa-spin');
 
             try {
-                const response = await fetch(`${CLOUD_URL}/latest`, {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'GET',
-                    headers: {
-                        'X-Master-Key': API_KEY
-                    }
+                    redirect: 'follow'
                 });
 
                 if (response.ok) {
-                    const data = await response.json();
-                    if (data && data.record && Array.isArray(data.record.vehicles)) {
-                        vehicles = data.record.vehicles;
-                        localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
-                        setCloudBadge('ok', 'Synced');
-                        lastErrorMsg = '';
-                    } else if (vehicles.length > 0) {
-                        // Ak je cloud prázdny, nahrá vaše lokálne dáta
-                        await saveCloudData();
-                    } else {
-                        setCloudBadge('ok', 'Synced');
+                    const text = await response.text();
+                    try {
+                        const data = JSON.parse(text);
+                        if (data && Array.isArray(data.vehicles) && data.vehicles.length > 0) {
+                            vehicles = data.vehicles;
+                            localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
+                            setCloudBadge('ok', 'Synced');
+                            lastErrorMsg = '';
+                        } else if (vehicles.length > 0) {
+                            // Ak je cloud prázdny, odošle lokálne dáta
+                            await saveCloudData();
+                        } else {
+                            setCloudBadge('ok', 'Synced');
+                        }
+                    } catch(jsonErr) {
+                        lastErrorMsg = "Odpoveď nie je platný JSON. Uistite sa, že Web App ma prístup 'Anyone'.";
+                        setCloudBadge('error', 'Chyba formátu');
                     }
                 } else {
-                    const errText = await response.text();
-                    lastErrorMsg = `HTTP ${response.status}: ${errText}`;
+                    lastErrorMsg = `HTTP ${response.status}`;
                     setCloudBadge('error', 'Chyba servera');
                 }
             } catch(e) {
-                console.warn("Offline alebo chyba pripojenia k cloudu:", e);
+                console.warn("Chyba pripojenia k cloudu:", e);
                 lastErrorMsg = e.toString();
                 setCloudBadge('error', 'Offline režim');
             } finally {
@@ -329,30 +330,24 @@
             }
         }
 
-        // ULOŽENIE DO CLOUDU
+        // ULOŽENIE DO GOOGLE SCRIPT CLOUDU
         async function saveCloudData() {
             localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
             setCloudBadge('syncing', 'Ukladám...');
 
             try {
-                const res = await fetch(CLOUD_URL, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': API_KEY
-                    },
-                    body: JSON.stringify({ vehicles: vehicles, updatedAt: new Date().toISOString() })
+                const payload = JSON.stringify({ vehicles: vehicles, updatedAt: new Date().toISOString() });
+                
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: payload
                 });
 
-                if (res.ok) {
-                    setCloudBadge('ok', 'Uložené v cloude');
-                    showBannerMsg('Dáta boli úspešne zosynchronizované s cloudom!', 'success');
-                    lastErrorMsg = '';
-                } else {
-                    const errText = await res.text();
-                    lastErrorMsg = `HTTP ${res.status}: ${errText}`;
-                    setCloudBadge('error', 'Uložené iba lokálne');
-                }
+                setCloudBadge('ok', 'Uložené v cloude');
+                showBannerMsg('Dáta boli úspešne zosynchronizované s cloudom!', 'success');
+                lastErrorMsg = '';
             } catch(e) {
                 console.error("Chyba ukladania do cloudu:", e);
                 lastErrorMsg = e.toString();
@@ -362,9 +357,9 @@
 
         function showLastError() {
             if (lastErrorMsg) {
-                alert("Detail chyby pripojenia:\n\n" + lastErrorMsg);
+                alert("Detail stavu pripojenia:\n\n" + lastErrorMsg);
             } else {
-                alert("Pripojenie k cloudu je v poriadku!");
+                alert("Pripojenie k vášmu Google Cloudu je v poriadku!");
             }
         }
 
