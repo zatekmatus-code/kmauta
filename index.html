@@ -6,6 +6,11 @@
     <title>Správa Vozidiel - STK, EK, DZ & Servis</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase Cloud Database SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
     <style>
         .badge-ok { background-color: #10b981; color: white; }
         .badge-warning { background-color: #f59e0b; color: white; }
@@ -43,7 +48,7 @@
         </div>
     </div>
 
-    <!-- HLAVNÁ APLIKÁCIA (Skrytá kým nie je prihlásený) -->
+    <!-- HLAVNÁ APLIKÁCIA -->
     <div id="appScreen" class="hidden">
         <!-- Navigácia / Hlavička -->
         <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-40">
@@ -56,9 +61,6 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <button onclick="fetchCloudData()" id="syncBtn" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded border border-slate-700 flex items-center gap-1 transition" title="Obnoviť dáta zo servera">
-                        <i class="fa-solid fa-rotate" id="syncIcon"></i> Obnoviť
-                    </button>
                     <button onclick="exportData()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded border border-slate-700 flex items-center gap-1 transition">
                         <i class="fa-solid fa-download"></i> Export
                     </button>
@@ -77,9 +79,9 @@
         </header>
 
         <main class="max-w-7xl mx-auto px-4 pt-6">
-            <!-- Indikátor ukladania/synchros -->
-            <div id="syncStatus" class="hidden mb-4 p-2 text-xs text-center rounded bg-blue-50 text-blue-700 border border-blue-200">
-                <i class="fa-solid fa-spinner fa-spin mr-1"></i> Prebieha synchronizácia s cloudovou databázou...
+            <!-- Indikátor synchronizácie -->
+            <div id="syncStatus" class="hidden mb-4 p-2 text-xs text-center rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <i class="fa-solid fa-cloud-arrow-up mr-1"></i> Prebieha synchronizácia s databázou...
             </div>
 
             <!-- Upozorňovací Banner -->
@@ -227,12 +229,29 @@
             "sklad": "Podzavoz23!03"
         };
 
-        // KOLEKTÍVNA CLOUDOVÁ DATABÁZA (JSONBin API)
-        const API_URL = `https://api.jsonbin.io/v3/b/6706222be41b4d34e43fc08a`;
-        const MASTER_KEY = "$2a$10$wT28N4d3pOnA9bK5.7lEGuuGSp2m.C1LwK41oFm6BSp4v1S3bC31S";
+        // FIREBASE CLOUD DATABASE CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyD-demo-key-km-auta",
+            authDomain: "km-auta.firebaseapp.com",
+            projectId: "km-auta-app",
+            storageBucket: "km-auta-app.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcde12345"
+        };
 
+        let db = null;
         let vehicles = [];
         let currentFilter = 'all';
+
+        // Pripojenie na Firebase cloud
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            // Použitie lokálnej pamäte s podporou offline synchro
+            db.enablePersistence().catch(() => {});
+        } catch(e) {
+            console.error("Firebase inicializácia zlyhala:", e);
+        }
 
         window.addEventListener('DOMContentLoaded', () => {
             const loggedUser = localStorage.getItem('km_logged_user');
@@ -268,44 +287,38 @@
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('appScreen').classList.remove('hidden');
             document.getElementById('currentUserBadge').innerText = `Prihlásený: ${username}`;
-            fetchCloudData();
+            
+            // Načítanie lokálnej zálohy pre okamžité zobrazenie
+            const localData = localStorage.getItem('km_vehicles_data');
+            if (localData) {
+                try { vehicles = JSON.parse(localData); } catch(e){}
+            }
+            renderVehicles();
+
+            // Sledovanie zmien v reálnom čase z Google Firebase
+            listenToRealtimeCloud();
         }
 
-        // NAČÍTANIE Z CLOUDU
-        async function fetchCloudData() {
+        // SLEDOVANIE DATABÁZY V REÁLNOM ČASE (REALTIME)
+        function listenToRealtimeCloud() {
+            if (!db) return;
             showSyncStatus(true);
-            const syncIcon = document.getElementById('syncIcon');
-            if (syncIcon) syncIcon.classList.add('fa-spin');
 
-            try {
-                // Načítanie z lokálneho pamäťového úložiska
-                const localData = localStorage.getItem('km_vehicles_data');
-                if (localData) {
-                    vehicles = JSON.parse(localData);
-                }
-
-                // Pokus o načítanie z online cloud databázy
-                const response = await fetch(API_URL + '/latest', {
-                    headers: { 'X-Master-Key': MASTER_KEY }
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.record && Array.isArray(result.record.vehicles) && result.record.vehicles.length > 0) {
-                        vehicles = result.record.vehicles;
-                        localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
-                    } else if (vehicles.length > 0) {
-                        // Ak je cloud prázdny, ale lokálne dáta existujú, nahrá lokálne do cloudu
-                        await saveCloudData();
-                    }
-                }
-            } catch(e) {
-                console.warn("Cloud zatiaľ nie je dosiahnuteľný, použijú sa lokálne dáta:", e);
-            } finally {
-                showSyncStatus(false);
-                if (syncIcon) syncIcon.classList.remove('fa-spin');
-                renderVehicles();
-            }
+            db.collection("fleet").doc("vehicles_doc")
+              .onSnapshot((doc) => {
+                  showSyncStatus(false);
+                  if (doc.exists && doc.data().vehicles) {
+                      vehicles = doc.data().vehicles;
+                      localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
+                      renderVehicles();
+                  } else if (vehicles.length > 0) {
+                      // Ak je cloud zatiaľ prázdny, pošle tam lokálne autá
+                      saveCloudData();
+                  }
+              }, (error) => {
+                  console.warn("Chyba cloudu, použijú sa lokálne dáta:", error);
+                  showSyncStatus(false);
+              });
         }
 
         // ULOŽENIE DO CLOUDU
@@ -313,18 +326,18 @@
             localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
             showSyncStatus(true);
 
-            try {
-                await fetch(API_URL, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': MASTER_KEY
-                    },
-                    body: JSON.stringify({ vehicles: vehicles })
-                });
-            } catch(e) {
-                console.error("Chyba pri ukladaní do cloudu:", e);
-            } finally {
+            if (db) {
+                try {
+                    await db.collection("fleet").doc("vehicles_doc").set({
+                        vehicles: vehicles,
+                        updatedAt: new Date().toISOString()
+                    });
+                } catch(e) {
+                    console.error("Chyba pri ukladaní do cloudu:", e);
+                } finally {
+                    showSyncStatus(false);
+                }
+            } else {
                 showSyncStatus(false);
             }
         }
