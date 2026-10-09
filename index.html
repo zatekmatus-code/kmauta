@@ -1,8 +1,3 @@
-index.html [generated with web_code_canvas tool]
-
-Tu je kompletne opravený zdrojový kód pripravený na skopírovanie do súboru index.html na GitHub-e:
-
-HTML
 <!DOCTYPE html>
 <html lang="sk">
 <head>
@@ -239,9 +234,8 @@ HTML
             "sklad": "Podzavoz23!03"
         };
 
-        // BEZPEČNÝ PUBLIC CLOUD STORAGE ENDPOINT
-        const BIN_ID = "67062831e41b4d34e43fc2b4";
-        const CLOUD_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+        // BEZPEČNÝ RELIABLE CLOUD ENDPOINT (npoint.io)
+        const CLOUD_URL = "https://api.npoint.io/46d6be1a32a6773a9032";
 
         let vehicles = [];
         let currentFilter = 'all';
@@ -290,14 +284,14 @@ HTML
             fetchCloudData();
         }
 
-        // NAČÍTANIE Z CLOUDU BEZ BLOKOVANIA
+        // NAČÍTANIE Z CLOUDU
         async function fetchCloudData() {
             setCloudBadge('syncing', 'Synchronizujem...');
             const syncIcon = document.getElementById('syncIcon');
             if (syncIcon) syncIcon.classList.add('fa-spin');
 
             try {
-                const response = await fetch(`${CLOUD_URL}/latest?meta=false`, {
+                const response = await fetch(CLOUD_URL, {
                     method: 'GET',
                     headers: { 'Accept': 'application/json' }
                 });
@@ -321,14 +315,14 @@ HTML
             }
         }
 
-        // ULOŽENIE DO CLOUDU (SÚČASNE LOKÁLNE AJ V CLOUDE)
+        // ULOŽENIE DO CLOUDU
         async function saveCloudData() {
             localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
             setCloudBadge('syncing', 'Ukladám...');
 
             try {
                 const res = await fetch(CLOUD_URL, {
-                    method: 'PUT',
+                    method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
