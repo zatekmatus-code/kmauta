@@ -55,9 +55,9 @@
                             <h1 class="text-xl font-bold tracking-wide">Správa Vozidiel</h1>
                             <div class="flex items-center gap-2 mt-0.5">
                                 <span id="currentUserBadge" class="text-[11px] text-slate-400"></span>
-                                <span id="cloudStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full font-medium bg-slate-800 text-slate-400 border border-slate-700">
+                                <button onclick="showLastError()" id="cloudStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full font-medium bg-slate-800 text-slate-400 border border-slate-700 cursor-pointer">
                                     <i class="fa-solid fa-cloud"></i> Pripájanie...
-                                </span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -234,11 +234,14 @@
             "sklad": "Podzavoz23!03"
         };
 
-        // VÁŠ VLASTNÝ GOOGLE APPS SCRIPT CLOUD ENDPOINT
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjtrmwRfArDrlPNyd01FLqs8qNrY_SxoC6b7Xe28dmmNHod3IY2CeaL-b6C2O789AS/exec";
+        // KLUCOVE SVIETIDLO S DIRECT API OVERENIM (JSONBin v3)
+        const BIN_ID = "67062831e41b4d34e43fc2b4";
+        const API_KEY = "$2a$10$wT28N4d3pOnA9bK5.7lEGuuGSp2m.C1LwK41oFm6BSp4v1S3bC31S";
+        const CLOUD_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
         let vehicles = [];
         let currentFilter = 'all';
+        let lastErrorMsg = '';
 
         window.addEventListener('DOMContentLoaded', () => {
             const loggedUser = localStorage.getItem('km_logged_user');
@@ -284,31 +287,36 @@
             fetchCloudData();
         }
 
-        // NAČÍTANIE Z CLOUDU GOOGLE
+        // NAČÍTANIE Z CLOUDU
         async function fetchCloudData() {
             setCloudBadge('syncing', 'Synchronizujem...');
             const syncIcon = document.getElementById('syncIcon');
             if (syncIcon) syncIcon.classList.add('fa-spin');
 
             try {
-                const response = await fetch(GOOGLE_SCRIPT_URL);
+                const response = await fetch(`${CLOUD_URL}/latest`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Master-Key': API_KEY
+                    }
+                });
+
                 if (response.ok) {
                     const data = await response.json();
-                    if (data && Array.isArray(data.vehicles) && data.vehicles.length > 0) {
-                        vehicles = data.vehicles;
+                    if (data && data.record && Array.isArray(data.record.vehicles)) {
+                        vehicles = data.record.vehicles;
                         localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
                         setCloudBadge('ok', 'Synced');
-                    } else if (vehicles.length > 0) {
-                        // Ak je cloud zatiaľ prázdny, odošle lokálne dáta
-                        await saveCloudData();
-                    } else {
-                        setCloudBadge('ok', 'Synced');
+                        lastErrorMsg = '';
                     }
                 } else {
+                    const errText = await response.text();
+                    lastErrorMsg = `HTTP ${response.status}: ${errText}`;
                     setCloudBadge('error', 'Chyba servera');
                 }
             } catch(e) {
                 console.warn("Offline alebo chyba pripojenia k cloudu:", e);
+                lastErrorMsg = e.toString();
                 setCloudBadge('error', 'Offline režim');
             } finally {
                 if (syncIcon) syncIcon.classList.remove('fa-spin');
@@ -316,25 +324,42 @@
             }
         }
 
-        // ULOŽENIE DO GOOGLE CLOUDU
+        // ULOŽENIE DO CLOUDU
         async function saveCloudData() {
             localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
             setCloudBadge('syncing', 'Ukladám...');
 
             try {
-                const payload = JSON.stringify({ vehicles: vehicles, updatedAt: new Date().toISOString() });
-                const res = await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', // Vyžadované pre Google Apps Script POST
-                    headers: { 'Content-Type': 'application/json' },
-                    body: payload
+                const res = await fetch(CLOUD_URL, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': API_KEY
+                    },
+                    body: JSON.stringify({ vehicles: vehicles, updatedAt: new Date().toISOString() })
                 });
 
-                setCloudBadge('ok', 'Uložené v cloude');
-                showBannerMsg('Dáta boli úspešne zosynchronizované s cloudom!', 'success');
+                if (res.ok) {
+                    setCloudBadge('ok', 'Uložené v cloude');
+                    showBannerMsg('Dáta boli úspešne zosynchronizované s cloudom!', 'success');
+                    lastErrorMsg = '';
+                } else {
+                    const errText = await res.text();
+                    lastErrorMsg = `HTTP ${res.status}: ${errText}`;
+                    setCloudBadge('error', 'Uložené iba lokálne');
+                }
             } catch(e) {
                 console.error("Chyba ukladania do cloudu:", e);
+                lastErrorMsg = e.toString();
                 setCloudBadge('error', 'Uložené iba lokálne');
+            }
+        }
+
+        function showLastError() {
+            if (lastErrorMsg) {
+                alert("Detail chyby pripojenia:\n\n" + lastErrorMsg);
+            } else {
+                alert("Pripojenie k cloudu je v poriadku!");
             }
         }
 
@@ -342,13 +367,13 @@
             const badge = document.getElementById('cloudStatusBadge');
             if (!badge) return;
             if (state === 'ok') {
-                badge.className = "text-[10px] px-2 py-0.5 rounded-full font-medium bg-emerald-950 text-emerald-400 border border-emerald-700";
+                badge.className = "text-[10px] px-2 py-0.5 rounded-full font-medium bg-emerald-950 text-emerald-400 border border-emerald-700 cursor-pointer";
                 badge.innerHTML = `<i class="fa-solid fa-cloud-check"></i> ${text}`;
             } else if (state === 'syncing') {
-                badge.className = "text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-950 text-amber-400 border border-amber-700";
+                badge.className = "text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-950 text-amber-400 border border-amber-700 cursor-pointer";
                 badge.innerHTML = `<i class="fa-solid fa-arrows-rotate fa-spin"></i> ${text}`;
             } else {
-                badge.className = "text-[10px] px-2 py-0.5 rounded-full font-medium bg-rose-950 text-rose-400 border border-rose-700";
+                badge.className = "text-[10px] px-2 py-0.5 rounded-full font-medium bg-rose-950 text-rose-400 border border-rose-700 cursor-pointer";
                 badge.innerHTML = `<i class="fa-solid fa-cloud-slash"></i> ${text}`;
             }
         }
