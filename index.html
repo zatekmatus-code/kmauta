@@ -234,8 +234,8 @@
             "sklad": "Podzavoz23!03"
         };
 
-        // KLUCOVE SVIETIDLO S DIRECT API OVERENIM (JSONBin v3)
-        const BIN_ID = "67062831e41b4d34e43fc2b4";
+        // NOVÉ PLATNÉ A BEZPEČNÉ CLOUDOVÉ ÚLOŽISKO (JSONBin.io v3)
+        const BIN_ID = "6706222be41b4d34e43fc08a";
         const API_KEY = "$2a$10$wT28N4d3pOnA9bK5.7lEGuuGSp2m.C1LwK41oFm6BSp4v1S3bC31S";
         const CLOUD_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
@@ -308,6 +308,11 @@
                         localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
                         setCloudBadge('ok', 'Synced');
                         lastErrorMsg = '';
+                    } else if (vehicles.length > 0) {
+                        // Ak je cloud prázdny, nahrá vaše lokálne dáta
+                        await saveCloudData();
+                    } else {
+                        setCloudBadge('ok', 'Synced');
                     }
                 } else {
                     const errText = await response.text();
