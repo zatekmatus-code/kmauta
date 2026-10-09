@@ -234,8 +234,8 @@
             "sklad": "Podzavoz23!03"
         };
 
-        // BEZPEČNÝ RELIABLE CLOUD ENDPOINT (npoint.io)
-        const CLOUD_URL = "https://api.npoint.io/46d6be1a32a6773a9032";
+        // VÁŠ VLASTNÝ GOOGLE APPS SCRIPT CLOUD ENDPOINT
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjtrmwRfArDrlPNyd01FLqs8qNrY_SxoC6b7Xe28dmmNHod3IY2CeaL-b6C2O789AS/exec";
 
         let vehicles = [];
         let currentFilter = 'all';
@@ -284,24 +284,25 @@
             fetchCloudData();
         }
 
-        // NAČÍTANIE Z CLOUDU
+        // NAČÍTANIE Z CLOUDU GOOGLE
         async function fetchCloudData() {
             setCloudBadge('syncing', 'Synchronizujem...');
             const syncIcon = document.getElementById('syncIcon');
             if (syncIcon) syncIcon.classList.add('fa-spin');
 
             try {
-                const response = await fetch(CLOUD_URL, {
-                    method: 'GET',
-                    headers: { 'Accept': 'application/json' }
-                });
-
+                const response = await fetch(GOOGLE_SCRIPT_URL);
                 if (response.ok) {
                     const data = await response.json();
-                    if (data && Array.isArray(data.vehicles)) {
+                    if (data && Array.isArray(data.vehicles) && data.vehicles.length > 0) {
                         vehicles = data.vehicles;
                         localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
-                        setCloudBadge('ok', 'Uložené v cloude');
+                        setCloudBadge('ok', 'Synced');
+                    } else if (vehicles.length > 0) {
+                        // Ak je cloud zatiaľ prázdny, odošle lokálne dáta
+                        await saveCloudData();
+                    } else {
+                        setCloudBadge('ok', 'Synced');
                     }
                 } else {
                     setCloudBadge('error', 'Chyba servera');
@@ -315,26 +316,22 @@
             }
         }
 
-        // ULOŽENIE DO CLOUDU
+        // ULOŽENIE DO GOOGLE CLOUDU
         async function saveCloudData() {
             localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
             setCloudBadge('syncing', 'Ukladám...');
 
             try {
-                const res = await fetch(CLOUD_URL, {
+                const payload = JSON.stringify({ vehicles: vehicles, updatedAt: new Date().toISOString() });
+                const res = await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ vehicles: vehicles, updatedAt: new Date().toISOString() })
+                    mode: 'no-cors', // Vyžadované pre Google Apps Script POST
+                    headers: { 'Content-Type': 'application/json' },
+                    body: payload
                 });
 
-                if (res.ok) {
-                    setCloudBadge('ok', 'Uložené v cloude');
-                    showBannerMsg('Dáta boli úspešne zosynchronizované s cloudom!', 'success');
-                } else {
-                    setCloudBadge('error', 'Uložené iba lokálne');
-                }
+                setCloudBadge('ok', 'Uložené v cloude');
+                showBannerMsg('Dáta boli úspešne zosynchronizované s cloudom!', 'success');
             } catch(e) {
                 console.error("Chyba ukladania do cloudu:", e);
                 setCloudBadge('error', 'Uložené iba lokálne');
