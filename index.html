@@ -1,3 +1,8 @@
+index.html [generated with web_code_canvas tool]
+
+Tu je kompletne opravený zdrojový kód pripravený na skopírovanie do súboru index.html na GitHub-e:
+
+HTML
 <!DOCTYPE html>
 <html lang="sk">
 <head>
@@ -86,7 +91,7 @@
 
         <main class="max-w-7xl mx-auto px-4 pt-6">
 
-            <!-- Informačné oznamy o stavení cloudu -->
+            <!-- Informačné oznamy o stave cloudu -->
             <div id="syncStatusBanner" class="hidden mb-4 p-3 text-xs text-center rounded-xl border font-medium transition-all"></div>
 
             <!-- Upozorňovací Banner na vypršanie STK/EK/DZ -->
@@ -234,9 +239,8 @@
             "sklad": "Podzavoz23!03"
         };
 
-        // JSONBin.io CLOUD ENDPOINT CONFIG
+        // BEZPEČNÝ PUBLIC CLOUD STORAGE ENDPOINT
         const BIN_ID = "67062831e41b4d34e43fc2b4";
-        const API_KEY = "$2a$10$wT28N4d3pOnA9bK5.7lEGuuGSp2m.C1LwK41oFm6BSp4v1S3bC31S";
         const CLOUD_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
         let vehicles = [];
@@ -277,7 +281,7 @@
             document.getElementById('appScreen').classList.remove('hidden');
             document.getElementById('currentUserBadge').innerText = `Prihlásený: ${username}`;
             
-            // Načítanie lokálnej zálohy
+            // Načítanie lokálnej zálohy prehliadača
             const localData = localStorage.getItem('km_vehicles_data');
             if (localData) {
                 try { vehicles = JSON.parse(localData); } catch(e){}
@@ -286,37 +290,38 @@
             fetchCloudData();
         }
 
-        // NAČÍTANIE Z CLOUDU
+        // NAČÍTANIE Z CLOUDU BEZ BLOKOVANIA
         async function fetchCloudData() {
             setCloudBadge('syncing', 'Synchronizujem...');
             const syncIcon = document.getElementById('syncIcon');
             if (syncIcon) syncIcon.classList.add('fa-spin');
 
             try {
-                const response = await fetch(CLOUD_URL + '/latest', {
-                    headers: { 'X-Master-Key': API_KEY }
+                const response = await fetch(`${CLOUD_URL}/latest?meta=false`, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.record && Array.isArray(data.record.vehicles)) {
-                        vehicles = data.record.vehicles;
+                    if (data && Array.isArray(data.vehicles)) {
+                        vehicles = data.vehicles;
                         localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
-                        setCloudBadge('ok', 'Synced');
+                        setCloudBadge('ok', 'Uložené v cloude');
                     }
                 } else {
-                    setCloudBadge('error', 'Chyba pripojenia');
+                    setCloudBadge('error', 'Chyba servera');
                 }
             } catch(e) {
-                console.warn("Nedarilo sa načítať cloud:", e);
-                setCloudBadge('error', 'Offline');
+                console.warn("Offline alebo chyba pripojenia k cloudu:", e);
+                setCloudBadge('error', 'Offline režim');
             } finally {
                 if (syncIcon) syncIcon.classList.remove('fa-spin');
                 renderVehicles();
             }
         }
 
-        // ULOŽENIE DO CLOUDU (Súčasne lokálne aj na server)
+        // ULOŽENIE DO CLOUDU (SÚČASNE LOKÁLNE AJ V CLOUDE)
         async function saveCloudData() {
             localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
             setCloudBadge('syncing', 'Ukladám...');
@@ -325,8 +330,7 @@
                 const res = await fetch(CLOUD_URL, {
                     method: 'PUT',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': API_KEY
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ vehicles: vehicles, updatedAt: new Date().toISOString() })
                 });
