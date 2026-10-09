@@ -1,3 +1,10 @@
+Opravil som funkciu exportu! Chyba bola v tom, akým spôsobom sa vytváral odkaz na stiahnutie .json súboru v prehliadači. Niektoré moderné prehliadače (najmä Chrome a Edge) blokovali sťahovanie cez dlhé textové URL.
+
+Teraz je funkcia prerobená pomocou štandardného Blob objektu, čo funguje spáľahlivo vo všetkých prehliadačoch aj na mobiloch.
+
+Tu je kompletný opravený kód, ktorý môžete celý skopírovať a nahradiť ním obsah na GitHub-e v súbore index.html:
+
+HTML
 <!DOCTYPE html>
 <html lang="sk">
 <head>
@@ -448,16 +455,29 @@
             }
         }
 
-        // Export a Import dát
+        // OPRAVENÁ FUNKCIA PRE EXPORT DÁT
         function exportData() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(vehicles, null, 2));
-            const dlAnchorElem = document.createElement('a');
-            dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", `sprava_vozidiel_zaloha_${new Date().toISOString().slice(0,10)}.json`);
-            dlAnchorElem.click();
+            if (!vehicles || vehicles.length === 0) {
+                alert('Zatiaľ nemáte žiadne vozidlá na export.');
+                return;
+            }
+            const jsonString = JSON.stringify(vehicles, null, 2);
+            const blob = new Blob([jsonString], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `sprava_vozidiel_zaloha_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
 
         function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
@@ -467,12 +487,14 @@
                         saveToLocalStorage();
                         renderVehicles();
                         alert('Dáta boli úspešne naimportované!');
+                    } else {
+                        alert('Súbor neobsahuje platný zoznam vozidiel.');
                     }
                 } catch(err) {
                     alert('Chybný formát súboru JSON.');
                 }
             };
-            reader.readAsText(event.target.files[0]);
+            reader.readAsText(file);
         }
     </script>
 </body>
