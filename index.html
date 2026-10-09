@@ -15,68 +15,101 @@
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800 font-sans pb-12">
 
-    <!-- Navigácia / Hlavička -->
-    <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <i class="fa-solid fa-car-side text-2xl text-blue-400"></i>
-                <h1 class="text-xl font-bold tracking-wide">Správa Vozidiel</h1>
+    <!-- PRIHLASOVACIA OBRAZOVKA (LOGIN SCREEN) -->
+    <div id="loginScreen" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 border border-slate-700">
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-full mb-3">
+                    <i class="fa-solid fa-lock text-2xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800">Správa Vozidiel</h2>
+                <p class="text-xs text-slate-500 mt-1">Pre prístup do systému sa prihláste</p>
             </div>
-            <div class="flex items-center space-x-2">
-                <button onclick="exportData()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded border border-slate-700 flex items-center gap-1 transition">
-                    <i class="fa-solid fa-download"></i> Export
+
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Prihlasovacie meno</label>
+                    <input type="text" id="loginUser" required placeholder="admin / sklad" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Heslo</label>
+                    <input type="password" id="loginPass" required placeholder="••••••••" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div id="loginError" class="text-xs text-rose-500 font-semibold hidden text-center">Nesprávne meno alebo heslo!</div>
+                <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg text-sm shadow transition mt-2">
+                    Prihlásiť sa
                 </button>
-                <label class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded border border-slate-700 cursor-pointer flex items-center gap-1 transition">
-                    <i class="fa-solid fa-upload"></i> Import
-                    <input type="file" id="importFile" onchange="importData(event)" class="hidden" accept=".json">
-                </label>
-                <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded shadow text-sm flex items-center gap-2 transition">
-                    <i class="fa-solid fa-plus"></i> Pridať auto
-                </button>
-            </div>
+            </form>
         </div>
-    </header>
+    </div>
 
-    <main class="max-w-7xl mx-auto px-4 pt-6">
-
-        <!-- Upozorňovací Banner -->
-        <div id="alertBanner" class="hidden mb-6 p-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 shadow-sm">
-            <div class="flex items-start gap-3">
-                <i class="fa-solid fa-triangle-exclamation text-amber-600 text-xl mt-0.5"></i>
-                <div class="flex-1">
-                    <h3 class="font-semibold text-amber-900">Upozornenie na končiacu platnosť!</h3>
-                    <p class="text-sm mt-1" id="alertBannerText"></p>
+    <!-- HLAVNÁ APLIKÁCIA (Skrytá kým nie je prihlásený) -->
+    <div id="appScreen" class="hidden">
+        <!-- Navigácia / Hlavička -->
+        <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <i class="fa-solid fa-car-side text-2xl text-blue-400"></i>
+                    <div>
+                        <h1 class="text-xl font-bold tracking-wide">Správa Vozidiel</h1>
+                        <div id="currentUserBadge" class="text-[11px] text-slate-400"></div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="exportData()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded border border-slate-700 flex items-center gap-1 transition">
+                        <i class="fa-solid fa-download"></i> Export
+                    </button>
+                    <label class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded border border-slate-700 cursor-pointer flex items-center gap-1 transition">
+                        <i class="fa-solid fa-upload"></i> Import
+                        <input type="file" id="importFile" onchange="importData(event)" class="hidden" accept=".json">
+                    </label>
+                    <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded shadow text-sm flex items-center gap-2 transition">
+                        <i class="fa-solid fa-plus"></i> Pridať auto
+                    </button>
+                    <button onclick="handleLogout()" class="text-xs bg-rose-900/80 hover:bg-rose-800 text-rose-200 px-3 py-2 rounded border border-rose-700 flex items-center gap-1 transition ml-2">
+                        <i class="fa-solid fa-right-from-bracket"></i> Odhlásiť
+                    </button>
                 </div>
             </div>
-        </div>
+        </header>
 
-        <!-- Filtre a Vyhľadávanie -->
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="relative w-full md:w-96">
-                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i>
-                <input type="text" id="searchInput" oninput="renderVehicles()" placeholder="Hľadať podľa EČV, názvu alebo zodpovedného..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <main class="max-w-7xl mx-auto px-4 pt-6">
+            <!-- Upozorňovací Banner -->
+            <div id="alertBanner" class="hidden mb-6 p-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 shadow-sm">
+                <div class="flex items-start gap-3">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-600 text-xl mt-0.5"></i>
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-amber-900">Upozornenie na končiacu platnosť!</h3>
+                        <p class="text-sm mt-1" id="alertBannerText"></p>
+                    </div>
+                </div>
             </div>
 
-            <div class="flex items-center space-x-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-                <button onclick="setFilter('all')" id="btn-filter-all" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white transition">Všetky</button>
-                <button onclick="setFilter('warning')" id="btn-filter-warning" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Končiace (&le; 30 dní)</button>
-                <button onclick="setFilter('expired')" id="btn-filter-expired" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Neplatné / Expirované</button>
+            <!-- Filtre a Vyhľadávanie -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="relative w-full md:w-96">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i>
+                    <input type="text" id="searchInput" oninput="renderVehicles()" placeholder="Hľadať podľa EČV, názvu alebo zodpovedného..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div class="flex items-center space-x-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                    <button onclick="setFilter('all')" id="btn-filter-all" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white transition">Všetky</button>
+                    <button onclick="setFilter('warning')" id="btn-filter-warning" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Končiace (&le; 30 dní)</button>
+                    <button onclick="setFilter('expired')" id="btn-filter-expired" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Neplatné / Expirované</button>
+                </div>
             </div>
-        </div>
 
-        <!-- Mriežka Vozidiel -->
-        <div id="vehiclesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Karty aut sa načítajú dynamicky cez JS -->
-        </div>
+            <!-- Mriežka Vozidiel -->
+            <div id="vehiclesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
-        <!-- Prázdny stav -->
-        <div id="emptyState" class="hidden text-center py-16 bg-white rounded-xl border border-dashed border-slate-300 mt-6">
-            <i class="fa-solid fa-car text-5xl text-slate-300 mb-3"></i>
-            <h3 class="text-lg font-medium text-slate-600">Žiadne vozidlá</h3>
-            <p class="text-sm text-slate-400 mt-1">Pridajte svoje prvé vozidlo kliknutím na tlačidlo vyššie.</p>
-        </div>
-
-    </main>
+            <!-- Prázdny stav -->
+            <div id="emptyState" class="hidden text-center py-16 bg-white rounded-xl border border-dashed border-slate-300 mt-6">
+                <i class="fa-solid fa-car text-5xl text-slate-300 mb-3"></i>
+                <h3 class="text-lg font-medium text-slate-600">Žiadne vozidlá</h3>
+                <p class="text-sm text-slate-400 mt-1">Pridajte svoje prvé vozidlo kliknutím na tlačidlo vyššie.</p>
+            </div>
+        </main>
+    </div>
 
     <!-- MODÁLNE OKNO: Pridať / Upraviť auto -->
     <div id="vehicleModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -180,11 +213,54 @@
 
     <!-- LOGIKA A SCRIPT -->
     <script>
+        // ZOZNAM ÚČTOV
+        const USERS = {
+            "admin": "Podzavoz23!03",
+            "sklad": "Podzavoz23!03"
+        };
+
         let vehicles = [];
         let currentFilter = 'all';
 
-        // Načítanie dát pri štarte
+        // Kontrola prihlásenia pri štarte
         window.addEventListener('DOMContentLoaded', () => {
+            const loggedUser = localStorage.getItem('km_logged_user');
+            if (loggedUser && USERS[loggedUser]) {
+                showApp(loggedUser);
+            }
+        });
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('loginUser').value.trim().toLowerCase();
+            const p = document.getElementById('loginPass').value;
+            const err = document.getElementById('loginError');
+
+            if (USERS[u] && USERS[u] === p) {
+                localStorage.setItem('km_logged_user', u);
+                err.classList.add('hidden');
+                showApp(u);
+            } else {
+                err.classList.remove('hidden');
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('km_logged_user');
+            document.getElementById('appScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginUser').value = '';
+            document.getElementById('loginPass').value = '';
+        }
+
+        function showApp(username) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appScreen').classList.remove('hidden');
+            document.getElementById('currentUserBadge').innerText = `Prihlásený: ${username}`;
+            loadData();
+        }
+
+        function loadData() {
             const savedData = localStorage.getItem('km_vehicles_data');
             if (savedData) {
                 try {
@@ -193,7 +269,6 @@
                     console.error("Chyba pri načítaní dát", e);
                 }
             } else {
-                // Ukážkové vozidlo pri prvom spustení
                 vehicles = [{
                     id: '1',
                     name: 'Škoda Fabia Combi',
@@ -211,13 +286,12 @@
                 saveToLocalStorage();
             }
             renderVehicles();
-        });
+        }
 
         function saveToLocalStorage() {
             localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
         }
 
-        // Výpočet dní do vypršania
         function getDaysDiff(dateString) {
             if (!dateString) return null;
             const target = new Date(dateString);
@@ -236,7 +310,6 @@
             return { text: `${days} dní`, class: 'badge-ok', level: 'ok' };
         }
 
-        // Vykreslenie zoznamu
         function renderVehicles() {
             const grid = document.getElementById('vehiclesGrid');
             const emptyState = document.getElementById('emptyState');
@@ -249,7 +322,6 @@
                 (v.responsible && v.responsible.toLowerCase().includes(searchVal))
             );
 
-            // Filtrovanie podmienok
             if (currentFilter === 'warning') {
                 filtered = filtered.filter(v => {
                     const stk = getDaysDiff(v.stkDate);
@@ -287,7 +359,6 @@
                 const dzSkStatus = getStatusInfo(dzSkDays);
                 const dzCzStatus = getStatusInfo(dzCzDays);
 
-                // Zber správ pre varovný banner
                 if (stkDays !== null && stkDays <= 30) alertMessages.push(`<b>${v.name} (${v.ecv})</b>: STK o ${stkDays}d`);
                 if (ekDays !== null && ekDays <= 30) alertMessages.push(`<b>${v.name} (${v.ecv})</b>: EK o ${ekDays}d`);
                 if (dzSkDays !== null && dzSkDays <= 30) alertMessages.push(`<b>${v.name} (${v.ecv})</b>: SK známka o ${dzSkDays}d`);
@@ -298,7 +369,6 @@
                 
                 card.innerHTML = `
                     <div>
-                        <!-- Karta Hlavička -->
                         <div class="bg-slate-900 text-white p-4 flex justify-between items-start">
                             <div>
                                 <h3 class="font-bold text-lg leading-tight">${v.name}</h3>
@@ -313,9 +383,7 @@
                             </div>
                         </div>
 
-                        <!-- Karta Obsah -->
                         <div class="p-4 space-y-3">
-                            <!-- STK & EK -->
                             <div class="grid grid-cols-2 gap-2 text-xs">
                                 <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                                     <div class="text-slate-500 font-medium mb-1 flex items-center gap-1"><i class="fa-solid fa-shield"></i> STK</div>
@@ -329,7 +397,6 @@
                                 </div>
                             </div>
 
-                            <!-- Diaľničné známky (SK & CZ) -->
                             <div class="grid grid-cols-2 gap-2 text-xs">
                                 <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                                     <div class="text-slate-500 font-medium mb-1 flex justify-between items-center">
@@ -349,7 +416,6 @@
                                 </div>
                             </div>
 
-                            <!-- Pravidelný Servis -->
                             <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
                                 <div class="text-slate-500 font-medium mb-1 flex items-center justify-between">
                                     <span class="flex items-center gap-1"><i class="fa-solid fa-wrench text-slate-400"></i> Servis & Olej</span>
@@ -367,7 +433,6 @@
                 grid.appendChild(card);
             });
 
-            // Aktualizácia banneru
             const alertBanner = document.getElementById('alertBanner');
             const alertBannerText = document.getElementById('alertBannerText');
 
@@ -379,7 +444,6 @@
             }
         }
 
-        // Filtre
         function setFilter(filter) {
             currentFilter = filter;
             document.querySelectorAll('[id^="btn-filter-"]').forEach(btn => {
@@ -389,7 +453,6 @@
             renderVehicles();
         }
 
-        // Modálne okno
         function openModal() {
             document.getElementById('vehicleForm').reset();
             document.getElementById('vehicleId').value = '';
@@ -460,7 +523,6 @@
             }
         }
 
-        // Export dát
         function exportData() {
             if (!vehicles || vehicles.length === 0) {
                 alert('Zatiaľ nemáte žiadne vozidlá na export.');
