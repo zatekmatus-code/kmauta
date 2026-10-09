@@ -1,632 +1,478 @@
 <!DOCTYPE html>
-<html lang="sk" class="h-full bg-slate-900 text-slate-100">
+<html lang="sk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Správa Vozidiel - STK, EK & Diaľničná známka</title>
-    <!-- Tailwind CSS via CDN -->
+    <title>Správa Vozidiel - STK, EK, DZ & Servis</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        brand: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            500: '#0284c7',
-                            600: '#0284c7',
-                            700: '#0369a1',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <style>
+        .badge-ok { background-color: #10b981; color: white; }
+        .badge-warning { background-color: #f59e0b; color: white; }
+        .badge-danger { background-color: #ef4444; color: white; }
+        .badge-expired { background-color: #7f1d1d; color: white; }
+    </style>
 </head>
-<body class="h-full font-sans antialiased bg-slate-900 text-slate-100 flex flex-col min-h-screen">
+<body class="bg-slate-100 min-h-screen text-slate-800 font-sans pb-12">
 
-    <!-- Header -->
-    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-30 shadow-md">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap justify-between items-center gap-4">
+    <!-- Navigácia / Hlavička -->
+    <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-3">
-                <div class="p-2.5 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/30">
-                    <i class="fa-solid fa-car-rear text-2xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold text-white tracking-tight">Správa Vozidiel</h1>
-                    <p class="text-xs text-slate-400">Kontrola STK, EK a Diaľničných známok</p>
-                </div>
+                <i class="fa-solid fa-car-side text-2xl text-blue-400"></i>
+                <h1 class="text-xl font-bold tracking-wide">Správa Vozidiel</h1>
             </div>
-
-            <!-- Header Quick Actions -->
-            <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
-                <button onclick="openModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium text-sm transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2">
-                    <i class="fa-solid fa-plus text-xs"></i> Pridať vozidlo
+            <div class="flex items-center space-x-2">
+                <button onclick="exportData()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded border border-slate-700 flex items-center gap-1 transition">
+                    <i class="fa-solid fa-download"></i> Export
                 </button>
-                <button onclick="exportData()" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm transition-all border border-slate-600 flex items-center gap-1.5" title="Exportovať do JSON">
-                    <i class="fa-solid fa-download text-xs"></i> Export
-                </button>
-                <label class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm transition-all border border-slate-600 cursor-pointer flex items-center gap-1.5" title="Importovať z JSON">
-                    <i class="fa-solid fa-upload text-xs"></i> Import
-                    <input type="file" id="importFileInput" onchange="importData(event)" class="hidden" accept=".json">
+                <label class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded border border-slate-700 cursor-pointer flex items-center gap-1 transition">
+                    <i class="fa-solid fa-upload"></i> Import
+                    <input type="file" id="importFile" onchange="importData(event)" class="hidden" accept=".json">
                 </label>
-                <button onclick="resetData()" class="px-3 py-2 bg-slate-800 hover:bg-red-900/40 text-slate-400 hover:text-red-300 rounded-lg text-sm transition-all border border-slate-700 hover:border-red-800/50" title="Obnoviť ukážkové dáta">
-                    <i class="fa-solid fa-rotate-right text-xs"></i>
+                <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded shadow text-sm flex items-center gap-2 transition">
+                    <i class="fa-solid fa-plus"></i> Pridať auto
                 </button>
             </div>
         </div>
     </header>
 
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <main class="max-w-7xl mx-auto px-4 pt-6">
 
-        <!-- Banner for Urgent Expirations -->
-        <div id="alertBanner" class="hidden rounded-xl border p-4 transition-all duration-300 shadow-lg"></div>
-
-        <!-- Quick External Verification Portals -->
-        <div class="bg-slate-800/60 rounded-xl border border-slate-700/80 p-4">
-            <h3 class="text-xs uppercase tracking-wider font-semibold text-slate-400 mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-external-link-alt text-blue-400"></i> Oficiálne Overovacie Portály (SR)
-            </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <a href="https://eznamka.sk/sk/sprava-uhrad/overenie-platnosti" target="_blank" rel="noopener" class="flex items-center justify-between p-3 bg-slate-800 hover:bg-slate-700/80 rounded-lg border border-slate-700 transition group">
-                    <div class="flex items-center gap-2.5">
-                        <i class="fa-solid fa-road text-amber-400 text-lg"></i>
-                        <div>
-                            <div class="text-sm font-medium text-slate-200 group-hover:text-white">eznamka.sk</div>
-                            <div class="text-xs text-slate-400">Overenie diaľničnej známky</div>
-                        </div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right text-xs text-slate-500 group-hover:text-slate-300"></i>
-                </a>
-
-                <a href="https://www.jiscd.sk/" target="_blank" rel="noopener" class="flex items-center justify-between p-3 bg-slate-800 hover:bg-slate-700/80 rounded-lg border border-slate-700 transition group">
-                    <div class="flex items-center gap-2.5">
-                        <i class="fa-solid fa-shield-halved text-emerald-400 text-lg"></i>
-                        <div>
-                            <div class="text-sm font-medium text-slate-200 group-hover:text-white">JISCD Portál</div>
-                            <div class="text-xs text-slate-400">Informačný systém dopravy</div>
-                        </div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right text-xs text-slate-500 group-hover:text-slate-300"></i>
-                </a>
-
-                <a href="https://www.sevt.sk/" target="_blank" rel="noopener" class="flex items-center justify-between p-3 bg-slate-800 hover:bg-slate-700/80 rounded-lg border border-slate-700 transition group">
-                    <div class="flex items-center gap-2.5">
-                        <i class="fa-solid fa-smog text-cyan-400 text-lg"></i>
-                        <div>
-                            <div class="text-sm font-medium text-slate-200 group-hover:text-white">STK & EK Kontrola</div>
-                            <div class="text-xs text-slate-400">Overenie STK/EK protokolu</div>
-                        </div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right text-xs text-slate-500 group-hover:text-slate-300"></i>
-                </a>
+        <!-- Upozorňovací Banner -->
+        <div id="alertBanner" class="hidden mb-6 p-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 shadow-sm">
+            <div class="flex items-start gap-3">
+                <i class="fa-solid fa-triangle-exclamation text-amber-600 text-xl mt-0.5"></i>
+                <div class="flex-1">
+                    <h3 class="font-semibold text-amber-900">Upozornenie na končiacu platnosť!</h3>
+                    <p class="text-sm mt-1" id="alertBannerText"></p>
+                </div>
             </div>
         </div>
 
-        <!-- Controls & Filters Section -->
-        <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-slate-800/80 p-4 rounded-xl border border-slate-700">
-            <!-- Search Bar -->
-            <div class="relative flex-grow max-w-md">
-                <i class="fa-solid fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-                <input type="text" id="searchInput" oninput="renderVehicles()" placeholder="Hľadať podľa názvu alebo EČV / SPZ..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
+        <!-- Filtre a Vyhľadávanie -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="relative w-full md:w-96">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i>
+                <input type="text" id="searchInput" oninput="renderVehicles()" placeholder="Hľadať podľa EČV alebo názvu..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
 
-            <!-- Status Filter Tabs -->
-            <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-700 overflow-x-auto">
-                <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-3 py-1.5 rounded-md text-xs font-medium transition text-white bg-blue-600 shadow">
-                    Všetky (<span id="cnt-all">0</span>)
-                </button>
-                <button onclick="setFilter('warning')" id="filter-warning" class="filter-btn px-3 py-1.5 rounded-md text-xs font-medium transition text-slate-400 hover:text-amber-300">
-                    Končiace čoskoro (<span id="cnt-warning">0</span>)
-                </button>
-                <button onclick="setFilter('expired')" id="filter-expired" class="filter-btn px-3 py-1.5 rounded-md text-xs font-medium transition text-slate-400 hover:text-red-300">
-                    Neplatné (<span id="cnt-expired">0</span>)
-                </button>
+            <div class="flex items-center space-x-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                <button onclick="setFilter('all')" id="btn-filter-all" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white transition">Všetky</button>
+                <button onclick="setFilter('warning')" id="btn-filter-warning" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Končiace (&le; 30 dní)</button>
+                <button onclick="setFilter('expired')" id="btn-filter-expired" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Neplatné / Expirované</button>
             </div>
         </div>
 
-        <!-- Vehicles List Container -->
-        <div id="vehicleGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            <!-- Dynamically populated via JavaScript -->
+        <!-- Mriežka Vozidiel -->
+        <div id="vehiclesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Karty aut sa načítajú dynamicky cez JS -->
         </div>
 
-        <!-- Empty State Message -->
-        <div id="emptyState" class="hidden text-center py-12 bg-slate-800/30 rounded-xl border border-slate-800">
-            <i class="fa-solid fa-car-tunnel text-5xl text-slate-600 mb-3"></i>
-            <h3 class="text-lg font-medium text-slate-300">Žiadne vozidlá neboli nájdené</h3>
-            <p class="text-slate-500 text-sm mt-1 mb-4">Skúste upraviť filter vyhľadávania alebo pridajte nové vozidlo.</p>
-            <button onclick="openModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium text-sm transition">
-                Pridať nové vozidlo
-            </button>
+        <!-- Prázdny stav -->
+        <div id="emptyState" class="hidden text-center py-16 bg-white rounded-xl border border-dashed border-slate-300 mt-6">
+            <i class="fa-solid fa-car text-5xl text-slate-300 mb-3"></i>
+            <h3 class="text-lg font-medium text-slate-600">Žiadne vozidlá</h3>
+            <p class="text-sm text-slate-400 mt-1">Pridajte svoje prvé vozidlo kliknutím na tlačidlo vyššie.</p>
         </div>
+
     </main>
 
-    <footer class="mt-auto border-t border-slate-800 bg-slate-900/80 py-4 text-center text-xs text-slate-500">
-        <p>Správa Vozidiel &copy; 2026 | Údaje sú ukladané lokálne vo vašom prehliadači.</p>
-    </footer>
-
-    <!-- Add/Edit Vehicle Modal -->
-    <div id="vehicleModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-w-lg w-full overflow-hidden transition-all transform">
-            <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/80">
-                <h3 id="modalTitle" class="text-lg font-semibold text-white">Pridať vozidlo</h3>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-200 transition">
-                    <i class="fa-solid fa-xmark text-xl"></i>
-                </button>
+    <!-- MODÁLNE OKNO: Pridať / Upraviť auto -->
+    <div id="vehicleModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center sticky top-0 bg-white z-10">
+                <h2 id="modalTitle" class="text-lg font-bold text-slate-800">Pridať nové vozidlo</h2>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 transition"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
 
-            <form id="vehicleForm" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4">
+            <form id="vehicleForm" onsubmit="saveVehicle(event)" class="p-6 space-y-5">
                 <input type="hidden" id="vehicleId">
 
-                <!-- Vehicle Name & Plate -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Základné údaje -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Názov / Model vozidla *</label>
-                        <input type="text" id="vehicleName" required placeholder="napr. Škoda Octavia Combi" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500">
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Názov vozidla / Model *</label>
+                        <input type="text" id="name" required placeholder="napr. Škoda Octavia" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">EČV / SPZ *</label>
-                        <input type="text" id="licensePlate" required placeholder="napr. BL-123AB" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm uppercase text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500">
-                    </div>
-                </div>
-
-                <!-- Dates Grid -->
-                <div class="space-y-3 pt-2">
-                    <h4 class="text-xs uppercase tracking-wider font-semibold text-slate-400 border-b border-slate-700/60 pb-1">Dátumy platnosti</h4>
-                    
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1 flex items-center gap-1.5">
-                            <i class="fa-solid fa-road text-amber-400 text-xs"></i> Diaľničná známka (DZ)
-                        </label>
-                        <input type="date" id="dzDate" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-blue-500">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1 flex items-center gap-1.5">
-                            <i class="fa-solid fa-shield-halved text-emerald-400 text-xs"></i> Technická kontrola (STK)
-                        </label>
-                        <input type="date" id="stkDate" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-blue-500">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1 flex items-center gap-1.5">
-                            <i class="fa-solid fa-smog text-cyan-400 text-xs"></i> Emisná kontrola (EK)
-                        </label>
-                        <input type="date" id="ekDate" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-blue-500">
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">EČV / ŠPZ *</label>
+                        <input type="text" id="ecv" required placeholder="napr. ZA123AB" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm uppercase tracking-wider font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
                 </div>
 
-                <!-- Notes -->
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Poznámky (voliteľné)</label>
-                    <textarea id="notes" rows="2" placeholder="napr. servisný interval, typ oleja..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"></textarea>
+                <hr class="border-slate-100">
+
+                <!-- Technické kontroly (STK & EK) -->
+                <div class="space-y-3">
+                    <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-check text-blue-500"></i> Technická & Emisná kontrola
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">STK - Konec platnosti</label>
+                            <input type="date" id="stkDate" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">EK - Konec platnosti</label>
+                            <input type="date" id="ekDate" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Buttons -->
-                <div class="flex justify-end gap-3 pt-4 border-t border-slate-700">
-                    <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm font-medium transition">Zrušiť</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition">Uložiť vozidlo</button>
+                <hr class="border-slate-100">
+
+                <!-- Diaľničné známky (SK & CZ) -->
+                <div class="space-y-3">
+                    <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <i class="fa-solid fa-road text-blue-500"></i> Diaľničné známky (SK & CZ)
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">🇸🇰 SK Diaľničná známka</label>
+                            <input type="date" id="dzSkDate" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">🇨🇿 CZ Diaľničná známka</label>
+                            <input type="date" id="dzCzDate" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-slate-100">
+
+                <!-- Pravidelný Servis -->
+                <div class="space-y-3">
+                    <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <i class="fa-solid fa-wrench text-blue-500"></i> Pravidelný servis & Údržba
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Dátum servisu / oleja</label>
+                            <input type="date" id="serviceDate" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Stav tachometra (km)</label>
+                            <input type="number" id="currentKm" placeholder="150000" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Servisný interval (km)</label>
+                            <input type="number" id="nextServiceKm" placeholder="15000" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Poznámka k servisu / Pneumatiky</label>
+                        <input type="text" id="serviceNote" placeholder="napr. Letné prezuté 15.04., Olej 5W-30" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-200 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-lg text-sm font-medium transition">Zrušiť</button>
+                    <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium shadow transition">Uložiť vozidlo</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- LOGIKA A SCRIPT -->
     <script>
-        // Default sample data
-        const SAMPLE_VEHICLES = [
-            {
-                id: '1',
-                name: 'Škoda Octavia Combi',
-                plate: 'BA-987XY',
-                dzDate: getRelativeDate(15),   // Expiring in 15 days
-                stkDate: getRelativeDate(120),  // Valid
-                ekDate: getRelativeDate(120),   // Valid
-                notes: 'Služobné auto, výmena oleja pri 180 000 km'
-            },
-            {
-                id: '2',
-                name: 'Volkswagen Golf VII',
-                plate: 'KE-456AB',
-                dzDate: getRelativeDate(300),  // Valid
-                stkDate: getRelativeDate(-3),   // Expired 3 days ago
-                ekDate: getRelativeDate(-3),   // Expired 3 days ago
-                notes: 'Objednať sa na STK/EK čo najskôr!'
-            },
-            {
-                id: '3',
-                name: 'Hyundai Tucson',
-                plate: 'ZA-111CD',
-                dzDate: getRelativeDate(5),    // Urgent (5 days)
-                stkDate: getRelativeDate(25),   // Warning (25 days)
-                ekDate: getRelativeDate(25),   // Warning (25 days)
-                notes: 'Rodinné SUV'
-            }
-        ];
-
         let vehicles = [];
         let currentFilter = 'all';
 
-        // Helper to get relative date string (YYYY-MM-DD)
-        function getRelativeDate(daysOffset) {
-            const date = new Date();
-            date.setDate(date.getDate() + daysOffset);
-            return date.toISOString().split('T')[0];
-        }
-
-        // Initialize Application
+        // Načítanie dát pri štarte
         window.addEventListener('DOMContentLoaded', () => {
-            loadVehicles();
+            const savedData = localStorage.getItem('km_vehicles_data');
+            if (savedData) {
+                try {
+                    vehicles = JSON.parse(savedData);
+                } catch(e) {
+                    console.error("Chyba pri načítaní dát", e);
+                }
+            } else {
+                // Ukážkové vozidlo pri prvom spustení
+                vehicles = [{
+                    id: '1',
+                    name: 'Škoda Fabia Combi',
+                    ecv: 'CA123AB',
+                    stkDate: '2026-11-15',
+                    ekDate: '2026-11-15',
+                    dzSkDate: '2026-12-31',
+                    dzCzDate: '2026-10-25',
+                    serviceDate: '2026-12-01',
+                    currentKm: 145000,
+                    nextServiceKm: 150000,
+                    serviceNote: 'Zimné pneu, olej 5W-30'
+                }];
+                saveToLocalStorage();
+            }
             renderVehicles();
         });
 
-        // Load data from LocalStorage
-        function loadVehicles() {
-            const stored = localStorage.getItem('slovakia_fleet_data');
-            if (stored) {
-                try {
-                    vehicles = JSON.parse(stored);
-                } catch (e) {
-                    console.error('Error parsing stored data', e);
-                    vehicles = [...SAMPLE_VEHICLES];
-                }
-            } else {
-                vehicles = [...SAMPLE_VEHICLES];
-                saveVehicles();
-            }
+        function saveToLocalStorage() {
+            localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
         }
 
-        // Save data to LocalStorage
-        function saveVehicles() {
-            localStorage.setItem('slovakia_fleet_data', JSON.stringify(vehicles));
-        }
-
-        // Reset to sample data
-        function resetData() {
-            if (confirm('Naozaj chcete obnoviť ukážkové dáta? Všetky vaše zmeny budú prepísané.')) {
-                vehicles = [...SAMPLE_VEHICLES];
-                saveVehicles();
-                renderVehicles();
-            }
-        }
-
-        // Days calculation helper
-        function calculateDaysRemaining(dateString) {
+        // Výpočet dní do vypršania
+        function getDaysDiff(dateString) {
             if (!dateString) return null;
-            const targetDate = new Date(dateString);
+            const target = new Date(dateString);
             const today = new Date();
-            
-            // Normalize time parts
-            targetDate.setHours(0, 0, 0, 0);
-            today.setHours(0, 0, 0, 0);
-
-            const diffTime = targetDate - today;
+            today.setHours(0,0,0,0);
+            target.setHours(0,0,0,0);
+            const diffTime = target - today;
             return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
 
-        // Get status category
-        function getStatus(days) {
-            if (days === null) return 'none';
-            if (days < 0) return 'expired';
-            if (days <= 30) return 'warning';
-            return 'valid';
+        function getStatusInfo(days) {
+            if (days === null) return { text: 'Nezadané', class: 'bg-slate-100 text-slate-500', level: 'none' };
+            if (days < 0) return { text: `Expirované (${Math.abs(days)}d)`, class: 'badge-expired', level: 'expired' };
+            if (days <= 7) return { text: `${days} dní`, class: 'badge-danger', level: 'danger' };
+            if (days <= 30) return { text: `${days} dní`, class: 'badge-warning', level: 'warning' };
+            return { text: `${days} dní`, class: 'badge-ok', level: 'ok' };
         }
 
-        // Status badge UI generator
-        function renderStatusBadge(label, dateStr, iconClass) {
-            if (!dateStr) {
-                return `
-                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/50 border border-slate-800">
-                        <span class="text-xs text-slate-400 flex items-center gap-1.5"><i class="${iconClass}"></i> ${label}</span>
-                        <span class="text-xs font-medium text-slate-500">Nenastavené</span>
-                    </div>
-                `;
-            }
-
-            const days = calculateDaysRemaining(dateStr);
-            const status = getStatus(days);
-            const formattedDate = new Date(dateStr).toLocaleDateString('sk-SK');
-
-            let badgeBg = 'bg-emerald-950/40 border-emerald-800/50 text-emerald-300';
-            let daysText = `${days} dní`;
-
-            if (status === 'expired') {
-                badgeBg = 'bg-red-950/60 border-red-800/80 text-red-300 font-semibold animate-pulse';
-                daysText = `Neplatná (${Math.abs(days)}d po)`;
-            } else if (days <= 7) {
-                badgeBg = 'bg-red-900/40 border-red-700/60 text-red-300 font-medium';
-                daysText = `${days} dní!`;
-            } else if (status === 'warning') {
-                badgeBg = 'bg-amber-950/40 border-amber-800/60 text-amber-300';
-                daysText = `${days} dní`;
-            } else if (days === 0) {
-                badgeBg = 'bg-red-900/60 border-red-700 text-red-200 font-bold';
-                daysText = 'Dnes končí!';
-            }
-
-            return `
-                <div class="flex items-center justify-between p-2.5 rounded-lg border ${badgeBg} transition">
-                    <div class="flex items-center gap-2">
-                        <i class="${iconClass}"></i>
-                        <span class="text-xs font-medium">${label}</span>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-xs font-bold">${daysText}</div>
-                        <div class="text-[10px] opacity-75">${formattedDate}</div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Main Render Function
+        // Vykreslenie zoznamu
         function renderVehicles() {
-            const grid = document.getElementById('vehicleGrid');
+            const grid = document.getElementById('vehiclesGrid');
             const emptyState = document.getElementById('emptyState');
-            const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+            const searchVal = document.getElementById('searchInput').value.toLowerCase();
 
-            let allCount = vehicles.length;
-            let warningCount = 0;
-            let expiredCount = 0;
+            grid.innerHTML = '';
+            let filtered = vehicles.filter(v => 
+                v.name.toLowerCase().includes(searchVal) || v.ecv.toLowerCase().includes(searchVal)
+            );
 
-            // Calculate overall fleet health stats
-            let criticalAlerts = [];
-
-            vehicles.forEach(v => {
-                const dzDays = calculateDaysRemaining(v.dzDate);
-                const stkDays = calculateDaysRemaining(v.stkDate);
-                const ekDays = calculateDaysRemaining(v.ekDate);
-
-                const statuses = [getStatus(dzDays), getStatus(stkDays), getStatus(ekDays)];
-                
-                if (statuses.includes('expired')) {
-                    expiredCount++;
-                } else if (statuses.includes('warning')) {
-                    warningCount++;
-                }
-
-                // Check urgent notifications (within 7 days or expired)
-                const checkUrgent = (type, days) => {
-                    if (days !== null && days <= 7) {
-                        const statusMsg = days < 0 ? `má neplatnú ${type}!` : `má ${type} končiacu o ${days} dní!`;
-                        criticalAlerts.push(`<strong>${v.name} (${v.plate})</strong> ${statusMsg}`);
-                    }
-                };
-
-                checkUrgent('DZ', dzDays);
-                checkUrgent('STK', stkDays);
-                checkUrgent('EK', ekDays);
-            });
-
-            // Update Counts in Filter Buttons
-            document.getElementById('cnt-all').textContent = allCount;
-            document.getElementById('cnt-warning').textContent = warningCount;
-            document.getElementById('cnt-expired').textContent = expiredCount;
-
-            // Update Urgent Alert Banner
-            const alertBanner = document.getElementById('alertBanner');
-            if (criticalAlerts.length > 0) {
-                alertBanner.className = "rounded-xl border border-red-800/80 bg-red-950/50 p-4 shadow-lg text-red-200 text-sm flex items-start gap-3";
-                alertBanner.innerHTML = `
-                    <i class="fa-solid fa-triangle-exclamation text-red-400 text-lg mt-0.5"></i>
-                    <div>
-                        <div class="font-bold mb-1">Upozornenie na expirácie (${criticalAlerts.length}):</div>
-                        <ul class="list-disc list-inside space-y-0.5 text-xs text-red-300">
-                            ${criticalAlerts.map(msg => `<li>${msg}</li>`).join('')}
-                        </ul>
-                    </div>
-                `;
-            } else {
-                alertBanner.className = "hidden";
+            // Filtrovanie podmienok
+            if (currentFilter === 'warning') {
+                filtered = filtered.filter(v => {
+                    const stk = getDaysDiff(v.stkDate);
+                    const ek = getDaysDiff(v.ekDate);
+                    const dzSk = getDaysDiff(v.dzSkDate);
+                    const dzCz = getDaysDiff(v.dzCzDate);
+                    return (stk !== null && stk <= 30) || (ek !== null && ek <= 30) || (dzSk !== null && dzSk <= 30) || (dzCz !== null && dzCz <= 30);
+                });
+            } else if (currentFilter === 'expired') {
+                filtered = filtered.filter(v => {
+                    const stk = getDaysDiff(v.stkDate);
+                    const ek = getDaysDiff(v.ekDate);
+                    const dzSk = getDaysDiff(v.dzSkDate);
+                    const dzCz = getDaysDiff(v.dzCzDate);
+                    return (stk !== null && stk < 0) || (ek !== null && ek < 0) || (dzSk !== null && dzSk < 0) || (dzCz !== null && dzCz < 0);
+                });
             }
 
-            // Filter vehicles
-            const filtered = vehicles.filter(v => {
-                const matchesSearch = v.name.toLowerCase().includes(searchVal) || v.plate.toLowerCase().includes(searchVal);
-                
-                const dzDays = calculateDaysRemaining(v.dzDate);
-                const stkDays = calculateDaysRemaining(v.stkDate);
-                const ekDays = calculateDaysRemaining(v.ekDate);
-                const statuses = [getStatus(dzDays), getStatus(stkDays), getStatus(ekDays)];
-
-                if (!matchesSearch) return false;
-
-                if (currentFilter === 'warning') return statuses.includes('warning') || statuses.includes('expired');
-                if (currentFilter === 'expired') return statuses.includes('expired');
-                return true;
-            });
-
-            // Toggle empty state
             if (filtered.length === 0) {
-                grid.innerHTML = '';
                 emptyState.classList.remove('hidden');
-                return;
             } else {
                 emptyState.classList.add('hidden');
             }
 
-            // Render Vehicle Cards
-            grid.innerHTML = filtered.map(v => `
-                <div class="bg-slate-800 border border-slate-700/80 rounded-xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-600 transition">
+            let alertMessages = [];
+
+            filtered.forEach(v => {
+                const stkDays = getDaysDiff(v.stkDate);
+                const ekDays = getDaysDiff(v.ekDate);
+                const dzSkDays = getDaysDiff(v.dzSkDate);
+                const dzCzDays = getDaysDiff(v.dzCzDate);
+
+                const stkStatus = getStatusInfo(stkDays);
+                const ekStatus = getStatusInfo(ekDays);
+                const dzSkStatus = getStatusInfo(dzSkDays);
+                const dzCzStatus = getStatusInfo(dzCzDays);
+
+                // Zber správ pre varovný banner
+                if (stkDays !== null && stkDays <= 30) alertMessages.push(`<b>${v.name} (${v.ecv})</b>: STK o ${stkDays}d`);
+                if (ekDays !== null && ekDays <= 30) alertMessages.push(`<b>${v.name} (${v.ecv})</b>: EK o ${ekDays}d`);
+                if (dzSkDays !== null && dzSkDays <= 30) alertMessages.push(`<b>${v.name} (${v.ecv})</b>: SK známka o ${dzSkDays}d`);
+                if (dzCzDays !== null && dzCzDays <= 30) alertMessages.push(`<b>${v.name} (${v.ecv})</b>: CZ známka o ${dzCzDays}d`);
+
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition flex flex-col justify-between";
+                
+                card.innerHTML = `
                     <div>
-                        <!-- Header / License Plate -->
-                        <div class="flex justify-between items-start mb-4">
+                        <!-- Karta Hlavička -->
+                        <div class="bg-slate-900 text-white p-4 flex justify-between items-start">
                             <div>
-                                <h3 class="font-bold text-base text-white">${v.name}</h3>
-                                <span class="inline-block mt-1 font-mono text-xs px-2.5 py-1 bg-amber-400/10 text-amber-300 rounded border border-amber-400/20 tracking-wider">
-                                    ${v.plate}
-                                </span>
+                                <h3 class="font-bold text-lg leading-tight">${v.name}</h3>
+                                <span class="inline-block mt-1 bg-slate-800 text-amber-400 font-mono text-xs px-2 py-0.5 rounded border border-slate-700 tracking-widest font-semibold uppercase">${v.ecv}</span>
                             </div>
-                            <div class="flex gap-1">
-                                <button onclick="openModal('${v.id}')" class="p-1.5 text-slate-400 hover:text-blue-400 rounded-lg hover:bg-slate-700 transition" title="Upraviť">
-                                    <i class="fa-solid fa-pen-to-square text-sm"></i>
-                                </button>
-                                <button onclick="deleteVehicle('${v.id}')" class="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-slate-700 transition" title="Vymazať">
-                                    <i class="fa-solid fa-trash-can text-sm"></i>
-                                </button>
+                            <div class="flex space-x-1">
+                                <button onclick="editVehicle('${v.id}')" class="text-slate-400 hover:text-white p-1 rounded transition"><i class="fa-solid fa-pen-to-square"></i></button>
+                                <button onclick="deleteVehicle('${v.id}')" class="text-slate-400 hover:text-rose-400 p-1 rounded transition"><i class="fa-solid fa-trash"></i></button>
                             </div>
                         </div>
 
-                        <!-- Status Badges -->
-                        <div class="space-y-2 mb-4">
-                            ${renderStatusBadge('Diaľničná známka (DZ)', v.dzDate, 'fa-solid fa-road text-amber-400')}
-                            ${renderStatusBadge('Technická kontrola (STK)', v.stkDate, 'fa-solid fa-shield-halved text-emerald-400')}
-                            ${renderStatusBadge('Emisná kontrola (EK)', v.ekDate, 'fa-solid fa-smog text-cyan-400')}
-                        </div>
-
-                        <!-- Notes Section if Present -->
-                        ${v.notes ? `
-                            <div class="p-2.5 bg-slate-900/60 rounded-lg border border-slate-800 text-xs text-slate-400 mb-4 flex items-start gap-2">
-                                <i class="fa-solid fa-sticky-note text-slate-500 mt-0.5"></i>
-                                <span class="line-clamp-2">${v.notes}</span>
+                        <!-- Karta Obsah -->
+                        <div class="p-4 space-y-3">
+                            <!-- STK & EK -->
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                    <div class="text-slate-500 font-medium mb-1 flex items-center gap-1"><i class="fa-solid fa-shield"></i> STK</div>
+                                    <span class="px-2 py-0.5 rounded text-[11px] font-semibold ${stkStatus.class}">${stkStatus.text}</span>
+                                    <div class="text-[10px] text-slate-400 mt-1">${v.stkDate || '-'}</div>
+                                </div>
+                                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                    <div class="text-slate-500 font-medium mb-1 flex items-center gap-1"><i class="fa-solid fa-smog"></i> EK</div>
+                                    <span class="px-2 py-0.5 rounded text-[11px] font-semibold ${ekStatus.class}">${ekStatus.text}</span>
+                                    <div class="text-[10px] text-slate-400 mt-1">${v.ekDate || '-'}</div>
+                                </div>
                             </div>
-                        ` : ''}
+
+                            <!-- Diaľničné známky (SK & CZ) -->
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                    <div class="text-slate-500 font-medium mb-1 flex justify-between items-center">
+                                        <span>🇸🇰 SK Známka</span>
+                                        <a href="https://eznamka.sk" target="_blank" class="text-blue-500 hover:underline text-[10px]"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded text-[11px] font-semibold ${dzSkStatus.class}">${dzSkStatus.text}</span>
+                                    <div class="text-[10px] text-slate-400 mt-1">${v.dzSkDate || '-'}</div>
+                                </div>
+                                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                    <div class="text-slate-500 font-medium mb-1 flex justify-between items-center">
+                                        <span>🇨🇿 CZ Známka</span>
+                                        <a href="https://edalnice.cz" target="_blank" class="text-blue-500 hover:underline text-[10px]"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded text-[11px] font-semibold ${dzCzStatus.class}">${dzCzStatus.text}</span>
+                                    <div class="text-[10px] text-slate-400 mt-1">${v.dzCzDate || '-'}</div>
+                                </div>
+                            </div>
+
+                            <!-- Pravidelný Servis -->
+                            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
+                                <div class="text-slate-500 font-medium mb-1 flex items-center justify-between">
+                                    <span class="flex items-center gap-1"><i class="fa-solid fa-wrench text-slate-400"></i> Servis & Olej</span>
+                                    <span class="text-[10px] text-slate-400">${v.serviceDate || ''}</span>
+                                </div>
+                                <div class="flex justify-between items-center text-slate-700 font-medium mt-1">
+                                    <span>Tachometer: <b>${v.currentKm ? v.currentKm.toLocaleString() + ' km' : '-'}</b></span>
+                                    <span>Interval: <b>${v.nextServiceKm ? v.nextServiceKm.toLocaleString() + ' km' : '-'}</b></span>
+                                </div>
+                                ${v.serviceNote ? `<div class="text-[11px] text-slate-500 italic mt-1.5 border-t border-slate-200 pt-1">${v.serviceNote}</div>` : ''}
+                            </div>
+                        </div>
                     </div>
-
-                    <!-- Quick Verification Actions -->
-                    <div class="pt-3 border-t border-slate-700/60 flex justify-between text-xs text-slate-400">
-                        <span class="text-[11px] text-slate-500">Rýchle overenie:</span>
-                        <div class="flex gap-2">
-                            <a href="https://eznamka.sk/sk/sprava-uhrad/overenie-platnosti" target="_blank" class="hover:text-amber-300 underline">eznamka.sk</a>
-                            <span>&bull;</span>
-                            <a href="https://www.jiscd.sk/" target="_blank" class="hover:text-emerald-300 underline">STK/EK portal</a>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Set Filter View
-        function setFilter(filterType) {
-            currentFilter = filterType;
-            
-            // Update active tab styles
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.className = "filter-btn px-3 py-1.5 rounded-md text-xs font-medium transition text-slate-400 hover:text-slate-200";
+                `;
+                grid.appendChild(card);
             });
 
-            const activeBtn = document.getElementById(`filter-${filterType}`);
-            if (activeBtn) {
-                activeBtn.className = "filter-btn px-3 py-1.5 rounded-md text-xs font-medium transition text-white bg-blue-600 shadow";
-            }
+            // Aktualizácia banneru
+            const alertBanner = document.getElementById('alertBanner');
+            const alertBannerText = document.getElementById('alertBannerText');
 
+            if (alertMessages.length > 0) {
+                alertBannerText.innerHTML = alertMessages.join(' &bull; ');
+                alertBanner.classList.remove('hidden');
+            } else {
+                alertBanner.classList.add('hidden');
+            }
+        }
+
+        // Filtre
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('[id^="btn-filter-"]').forEach(btn => {
+                btn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition";
+            });
+            document.getElementById(`btn-filter-${filter}`).className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white transition";
             renderVehicles();
         }
 
-        // Modal Handlers
-        function openModal(vehicleId = null) {
-            const modal = document.getElementById('vehicleModal');
-            const title = document.getElementById('modalTitle');
-            
-            if (vehicleId) {
-                const v = vehicles.find(item => item.id === vehicleId);
-                if (v) {
-                    title.textContent = 'Upraviť vozidlo';
-                    document.getElementById('vehicleId').value = v.id;
-                    document.getElementById('vehicleName').value = v.name;
-                    document.getElementById('licensePlate').value = v.plate;
-                    document.getElementById('dzDate').value = v.dzDate || '';
-                    document.getElementById('stkDate').value = v.stkDate || '';
-                    document.getElementById('ekDate').value = v.ekDate || '';
-                    document.getElementById('notes').value = v.notes || '';
-                }
-            } else {
-                title.textContent = 'Pridať nové vozidlo';
-                document.getElementById('vehicleForm').reset();
-                document.getElementById('vehicleId').value = '';
-            }
-
-            modal.classList.remove('hidden');
+        // Modálne okno
+        function openModal() {
+            document.getElementById('vehicleForm').reset();
+            document.getElementById('vehicleId').value = '';
+            document.getElementById('modalTitle').innerText = 'Pridať nové vozidlo';
+            document.getElementById('vehicleModal').classList.remove('hidden');
         }
 
         function closeModal() {
             document.getElementById('vehicleModal').classList.add('hidden');
         }
 
-        function handleFormSubmit(e) {
+        function editVehicle(id) {
+            const v = vehicles.find(item => item.id === id);
+            if (!v) return;
+
+            document.getElementById('vehicleId').value = v.id;
+            document.getElementById('name').value = v.name || '';
+            document.getElementById('ecv').value = v.ecv || '';
+            document.getElementById('stkDate').value = v.stkDate || '';
+            document.getElementById('ekDate').value = v.ekDate || '';
+            document.getElementById('dzSkDate').value = v.dzSkDate || '';
+            document.getElementById('dzCzDate').value = v.dzCzDate || '';
+            document.getElementById('serviceDate').value = v.serviceDate || '';
+            document.getElementById('currentKm').value = v.currentKm || '';
+            document.getElementById('nextServiceKm').value = v.nextServiceKm || '';
+            document.getElementById('serviceNote').value = v.serviceNote || '';
+
+            document.getElementById('modalTitle').innerText = 'Upraviť vozidlo';
+            document.getElementById('vehicleModal').classList.remove('hidden');
+        }
+
+        function saveVehicle(e) {
             e.preventDefault();
-            
             const id = document.getElementById('vehicleId').value;
-            const name = document.getElementById('vehicleName').value.trim();
-            const plate = document.getElementById('licensePlate').value.trim().toUpperCase();
-            const dzDate = document.getElementById('dzDate').value;
-            const stkDate = document.getElementById('stkDate').value;
-            const ekDate = document.getElementById('ekDate').value;
-            const notes = document.getElementById('notes').value.trim();
+            const vehicleData = {
+                id: id || Date.now().toString(),
+                name: document.getElementById('name').value,
+                ecv: document.getElementById('ecv').value.toUpperCase(),
+                stkDate: document.getElementById('stkDate').value,
+                ekDate: document.getElementById('ekDate').value,
+                dzSkDate: document.getElementById('dzSkDate').value,
+                dzCzDate: document.getElementById('dzCzDate').value,
+                serviceDate: document.getElementById('serviceDate').value,
+                currentKm: document.getElementById('currentKm').value ? parseInt(document.getElementById('currentKm').value) : null,
+                nextServiceKm: document.getElementById('nextServiceKm').value ? parseInt(document.getElementById('nextServiceKm').value) : null,
+                serviceNote: document.getElementById('serviceNote').value
+            };
 
             if (id) {
-                // Edit existing
                 const index = vehicles.findIndex(v => v.id === id);
-                if (index !== -1) {
-                    vehicles[index] = { id, name, plate, dzDate, stkDate, ekDate, notes };
-                }
+                if (index !== -1) vehicles[index] = vehicleData;
             } else {
-                // Add new
-                const newVehicle = {
-                    id: Date.now().toString(),
-                    name,
-                    plate,
-                    dzDate,
-                    stkDate,
-                    ekDate,
-                    notes
-                };
-                vehicles.push(newVehicle);
+                vehicles.push(vehicleData);
             }
 
-            saveVehicles();
+            saveToLocalStorage();
             renderVehicles();
             closeModal();
         }
 
         function deleteVehicle(id) {
-            if (confirm('Naozaj chcete vymazať toto vozidlo zo zoznamu?')) {
+            if (confirm('Naozaj chcete vymazať toto vozidlo?')) {
                 vehicles = vehicles.filter(v => v.id !== id);
-                saveVehicles();
+                saveToLocalStorage();
                 renderVehicles();
             }
         }
 
-        // Export data to JSON file
+        // Export a Import dát
         function exportData() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(vehicles, null, 2));
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `moje_vozidla_${new Date().toISOString().split('T')[0]}.json`);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `sprava_vozidiel_zaloha_${new Date().toISOString().slice(0,10)}.json`);
+            dlAnchorElem.click();
         }
 
-        // Import data from JSON file
         function importData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const imported = JSON.parse(e.target.result);
                     if (Array.isArray(imported)) {
                         vehicles = imported;
-                        saveVehicles();
+                        saveToLocalStorage();
                         renderVehicles();
-                        alert('Dáta boli úspešne importované!');
-                    } else {
-                        alert('Neplatný formát súboru JSON.');
+                        alert('Dáta boli úspešne naimportované!');
                     }
-                } catch (err) {
-                    alert('Chyba pri čítaní súboru: ' + err.message);
+                } catch(err) {
+                    alert('Chybný formát súboru JSON.');
                 }
             };
-            reader.readAsText(file);
+            reader.readAsText(event.target.files[0]);
         }
     </script>
 </body>
