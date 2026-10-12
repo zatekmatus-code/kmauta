@@ -40,11 +40,15 @@
                     Prihlásiť sa
                 </button>
             </form>
+            
+            <div class="mt-8 text-center border-t border-slate-100 pt-4">
+                <span class="text-[11px] text-slate-400 font-medium tracking-wide">Vytvoril Matúš Zátek</span>
+            </div>
         </div>
     </div>
 
     <!-- HLAVNÁ APLIKÁCIA -->
-    <div id="appScreen" class="hidden">
+    <div id="appScreen" class="hidden flex flex-col min-h-screen">
         <!-- Navigácia / Hlavička -->
         <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-40">
             <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -84,7 +88,7 @@
             </div>
         </header>
 
-        <main class="max-w-7xl mx-auto px-4 pt-6">
+        <main class="max-w-7xl mx-auto px-4 pt-6 flex-grow">
 
             <!-- Informačné oznamy o stave cloudu -->
             <div id="syncStatusBanner" class="hidden mb-4 p-3 text-xs text-center rounded-xl border font-medium transition-all"></div>
@@ -124,6 +128,13 @@
                 <p class="text-sm text-slate-400 mt-1">Pridajte svoje prvé vozidlo kliknutím na tlačidlo vyššie.</p>
             </div>
         </main>
+
+        <!-- FOOTER WITH WATERMARK -->
+        <footer class="mt-12 py-6 border-t border-slate-200 text-center">
+            <p class="text-xs text-slate-400 font-medium tracking-wide flex items-center justify-center gap-1">
+                <span>Vytvoril Matúš Zátek</span>
+            </p>
+        </footer>
     </div>
 
     <!-- MODÁLNE OKNO: Pridať / Upraviť auto -->
