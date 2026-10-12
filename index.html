@@ -1,28 +1,3 @@
-Chápem, čo tým myslíte – myslíte tým to, že samotná webová aplikácia má prihlasovaciu obrazovku (admin / sklad), takže sa do rozhrania nedostane len tak hocikto.
-
-Avšak pri GitHube je veľký rozdiel medzi tým, či je veřejný repozitár (Public repository) na GitHube a tým, či je zabezpečená samotná aplikácia:
-
-GitHub Secret Scanning sa pozerá do kódov:
-Akonáhle nahráte kód do verejného GitHub repozitára (Public Repo), celá stránka index.html aj so všetkým textom vrátane API kľúča je viditeľná pre kohokoľvek na internete, kto navštívi vašu GitHub stránku (alebo pre automatické roboty, ktoré na GitHube vyhľadávajú zabudnuté hesla a kľúče).
-
-Prečo GitHub zobrazil to varovanie:
-Automatický bot od GitHubu prešiel kód, našiel v ňom reťazec vypadajúci ako Google API kľúč a varuje vás, že ho vidí celý svet.
-
-Ako to elegantne vyriešiť, aby bolo všetko 100% bezpečné:
-Upravil som kód tak, že API kľúč sa nenecháva zapísaný v zdrojovom kóde na GitHube.
-
-Aplikácia si kľúč bezpečne uloží priamo do vášho prehliadača (localStorage) po prvom zadaní, alebo môžete použiť pole pre API kľúč na záložke Real AI HS & DPH.
-
-Tým pádom:
-
-GitHub vám už nebude hlásiť žiadne varovanie pri nahrávaní kódu (Secret Scanning).
-
-Nikto z internetu vám kľúč z GitHubu neukradne.
-
-Vám v prehliadači bude AI fungovať úplne rovnako.
-
-Zdrojový kód pre index.html (bez kľúča v kóde):
-HTML
 <!DOCTYPE html>
 <html lang="sk">
 <head>
