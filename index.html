@@ -1,30 +1,3 @@
-index.html [generated with web_code_canvas tool]
-
-Máte plnú pravdu – model v predchádzajúcom nastavení konal príliš povrchne. Problém bol v dvoch veciach:
-
-Nízka kognitívna hĺbka (temperature / search grounding): AI dostávala veľmi strohý prompt a rýchlo robila skratkovité uzávery bez hlbšej analýzy colného sadzobníka (TARIC / CN).
-
-Chýbajúce národné rozšírenia colného sadzobníka: Pre ČR aj PL chýbali špecifické podpoložky (colné rozšírenia nad rámec 6-miestneho HS kódu).
-
-Čo som v kóde upravil a zásadne vylepšil:
-1. "Prebratie" AI (Zásadne vylepšený Prompt & Analýza)
-AI teraz dostáva striktné analytické pokyny pre colnú nomenklatúru:
-
-Lekárničky & Prvá pomoc: Výslovne uvedené pravidlo pre kompletné lekárničky a autolekárničky (HS 3006.50.00 / CN 3006 50 00) – spadajú pod zdravotnícky materiál so zníženou DPH (SK 5 %, CZ 12 %, PL 8 %).
-
-Systematické hľadanie: AI musí pred verdiktom spraviť 3-krokovú analýzu: Materiálové zloženie -> Funkčné určenie -> Colná kapitola (Kap. 30 vs. 90 vs. 84/85).
-
-2. Doplnenie interných colných kódov pre ČR a PL
-V detailnom AI okne sa teraz zobrazuje nielen medzinárodný 6-miestny HS kód, ale aj presné 8/10-miestne colné kódovanie pre jednotlivé trhy:
-
-🇸🇰 Slovensko (TARIC/CN): napr. 3006 50 00
-
-🇨🇿 Česká republika (Colný sadzobník ČR / CN): napr. 3006 50 00
-
-🇵🇱 Poľsko (KOD CN / PKWiU): pridaný aj poľský klasifikačný kód tovarov a služieb PKWiU (napr. 21.20.24.0), ktorý je v Poľsku kľúčový pre správne určenie sadzby PTU (DPH).
-
-Aktualizovaný kód index.html:
-HTML
 <!DOCTYPE html>
 <html lang="sk">
 <head>
