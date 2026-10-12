@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Správa Vozidiel - Google Cloud Sync</title>
+    <title>Správa Vozidiel & AI HS / DPH Overenie</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -23,7 +23,7 @@
                     <i class="fa-solid fa-shield-halved text-2xl"></i>
                 </div>
                 <h2 class="text-2xl font-bold text-slate-800">Správa Vozidiel</h2>
-                <p class="text-xs text-slate-500 mt-1">Prihláste sa pre prístup k vozovému parku</p>
+                <p class="text-xs text-slate-500 mt-1">Prihláste sa pre prístup k systému</p>
             </div>
 
             <form onsubmit="handleLogin(event)" class="space-y-4">
@@ -52,7 +52,7 @@
         <!-- Navigácia / Hlavička -->
         <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-40">
             <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div class="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-start">
+                <div class="flex items-center space-x-4 w-full md:w-auto justify-between md:justify-start">
                     <div class="flex items-center space-x-3">
                         <i class="fa-solid fa-car-side text-2xl text-blue-400"></i>
                         <div>
@@ -65,9 +65,19 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- PREPÍNAČ ZÁLOŽIEK -->
+                    <div class="flex bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs">
+                        <button onclick="switchTab('vehicles')" id="tabBtnVehicles" class="px-3 py-1.5 rounded-md font-medium bg-blue-600 text-white transition">
+                            <i class="fa-solid fa-car"></i> Vozidlá
+                        </button>
+                        <button onclick="switchTab('vat')" id="tabBtnVat" class="px-3 py-1.5 rounded-md font-medium text-slate-300 hover:text-white transition">
+                            <i class="fa-solid fa-barcode"></i> HS Kódy & DPH
+                        </button>
+                    </div>
                 </div>
 
-                <div class="flex items-center space-x-2 w-full md:w-auto justify-end overflow-x-auto pb-1 md:pb-0">
+                <div id="vehiclesHeaderActions" class="flex items-center space-x-2 w-full md:w-auto justify-end overflow-x-auto pb-1 md:pb-0">
                     <button onclick="fetchCloudData(true)" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded border border-slate-700 flex items-center gap-1 transition" title="Načítať najnovšie dáta z cloudu">
                         <i class="fa-solid fa-rotate" id="syncIcon"></i> Obnoviť
                     </button>
@@ -90,43 +100,84 @@
 
         <main class="max-w-7xl mx-auto px-4 pt-6 flex-grow">
 
-            <!-- Informačné oznamy o stave cloudu -->
-            <div id="syncStatusBanner" class="hidden mb-4 p-3 text-xs text-center rounded-xl border font-medium transition-all"></div>
+            <!-- ZÁLOŽKA 1: SPRÁVA VOZIDIEL -->
+            <div id="vehiclesTab">
+                <div id="syncStatusBanner" class="hidden mb-4 p-3 text-xs text-center rounded-xl border font-medium transition-all"></div>
 
-            <!-- Upozorňovací Banner na vypršanie STK/EK/DZ/Poistenia -->
-            <div id="alertBanner" class="hidden mb-6 p-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 shadow-sm">
-                <div class="flex items-start gap-3">
-                    <i class="fa-solid fa-triangle-exclamation text-amber-600 text-xl mt-0.5"></i>
-                    <div class="flex-1">
-                        <h3 class="font-semibold text-amber-900">Upozornenie na končiacu platnosť!</h3>
-                        <p class="text-sm mt-1" id="alertBannerText"></p>
+                <div id="alertBanner" class="hidden mb-6 p-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 shadow-sm">
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-600 text-xl mt-0.5"></i>
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-amber-900">Upozornenie na končiacu platnosť!</h3>
+                            <p class="text-sm mt-1" id="alertBannerText"></p>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Filtre a Vyhľadávanie -->
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div class="relative w-full md:w-96">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i>
-                    <input type="text" id="searchInput" oninput="renderVehicles()" placeholder="Hľadať podľa EČV, názvu alebo zodpovedného..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="relative w-full md:w-96">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i>
+                        <input type="text" id="searchInput" oninput="renderVehicles()" placeholder="Hľadať podľa EČV, názvu alebo zodpovedného..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div class="flex items-center space-x-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                        <button onclick="setFilter('all')" id="btn-filter-all" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white transition">Všetky</button>
+                        <button onclick="setFilter('warning')" id="btn-filter-warning" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Končiace (&le; 30 dní)</button>
+                        <button onclick="setFilter('expired')" id="btn-filter-expired" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Neplatné / Expirované</button>
+                    </div>
                 </div>
 
-                <div class="flex items-center space-x-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-                    <button onclick="setFilter('all')" id="btn-filter-all" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white transition">Všetky</button>
-                    <button onclick="setFilter('warning')" id="btn-filter-warning" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Končiace (&le; 30 dní)</button>
-                    <button onclick="setFilter('expired')" id="btn-filter-expired" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Neplatné / Expirované</button>
+                <div id="vehiclesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+                <div id="emptyState" class="hidden text-center py-16 bg-white rounded-xl border border-dashed border-slate-300 mt-6">
+                    <i class="fa-solid fa-car text-5xl text-slate-300 mb-3"></i>
+                    <h3 class="text-lg font-medium text-slate-600">Žiadne vozidlá</h3>
+                    <p class="text-sm text-slate-400 mt-1">Pridajte svoje prvé vozidlo kliknutím na tlačidlo vyššie.</p>
                 </div>
             </div>
 
-            <!-- Mriežka Vozidiel -->
-            <div id="vehiclesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            <!-- ZÁLOŽKA 2: AI OVERENIE HS KÓDU & DPH -->
+            <div id="vatTab" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="max-w-3xl">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold text-lg">
+                                <i class="fa-solid fa-barcode"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-800">AI Klasifikácia Tovaru, HS Kód & DPH</h2>
+                                <p class="text-xs text-slate-500">Zadajte názov produktu (napr. <i>„Sterilizátor Celitron“</i>, <i>„VMI Spectrum X-ray“</i>, <i>„Steelco washer“</i>) pre určenie HS kódu a DPH v EÚ.</p>
+                            </div>
+                        </div>
 
-            <!-- Prázdny stav -->
-            <div id="emptyState" class="hidden text-center py-16 bg-white rounded-xl border border-dashed border-slate-300 mt-6">
-                <i class="fa-solid fa-car text-5xl text-slate-300 mb-3"></i>
-                <h3 class="text-lg font-medium text-slate-600">Žiadne vozidlá</h3>
-                <p class="text-sm text-slate-400 mt-1">Pridajte svoje prvé vozidlo kliknutím na tlačidlo vyššie.</p>
+                        <div class="mt-4 flex flex-col md:flex-row gap-2">
+                            <input type="text" id="vatInput" onkeyup="if(event.key==='Enter') analyzeProduct()" placeholder="napr. Sterilizátor Celitron, rentgen VMI Spectrum, autoklav..." class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button onclick="analyzeProduct()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2 shadow">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Vyhľadať HS Kód & DPH
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Výsledok Klasifikácie (HS Kód + Popis) -->
+                <div id="hsCodeBox" class="hidden bg-slate-900 text-white p-5 rounded-2xl shadow-md border border-slate-800">
+                    <div class="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                        <div>
+                            <div class="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">Identifikovaný produkt & HS Kód</div>
+                            <h3 id="productTitle" class="text-xl font-bold"></h3>
+                            <p id="productCategory" class="text-xs text-slate-300 mt-1"></p>
+                        </div>
+                        <div class="bg-slate-800 border border-slate-700 px-4 py-2 rounded-xl font-mono text-amber-400 font-bold text-lg text-center">
+                            <div class="text-[10px] text-slate-400 uppercase tracking-widest font-sans">HS / HTS Kód</div>
+                            <span id="hsCodeValue"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mriežka DPH pre Krajiny EÚ -->
+                <div id="vatResults" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"></div>
             </div>
+
         </main>
 
         <!-- FOOTER WITH WATERMARK -->
@@ -148,7 +199,6 @@
             <form id="vehicleForm" onsubmit="saveVehicle(event)" class="p-6 space-y-5">
                 <input type="hidden" id="vehicleId">
 
-                <!-- Základné údaje -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Názov vozidla / Model *</label>
@@ -166,7 +216,6 @@
 
                 <hr class="border-slate-100">
 
-                <!-- Technické kontroly (STK & EK) -->
                 <div class="space-y-3">
                     <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
                         <i class="fa-solid fa-clipboard-check text-blue-500"></i> Technická & Emisná kontrola
@@ -185,13 +234,11 @@
 
                 <hr class="border-slate-100">
 
-                <!-- PZP & Havarijné Poistenie -->
                 <div class="space-y-3">
                     <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
                         <i class="fa-solid fa-file-contract text-blue-500"></i> PZP & Havarijné Poistenie
                     </h3>
                     
-                    <!-- PZP -->
                     <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
                         <div class="text-xs font-bold text-slate-700">PZP (Povinné zmluvné poistenie)</div>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -210,7 +257,6 @@
                         </div>
                     </div>
 
-                    <!-- Havarijné -->
                     <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
                         <div class="text-xs font-bold text-slate-700">Havarijné poistenie (Kasko)</div>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -232,7 +278,6 @@
 
                 <hr class="border-slate-100">
 
-                <!-- Diaľničné známky (SK & CZ) -->
                 <div class="space-y-3">
                     <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
                         <i class="fa-solid fa-road text-blue-500"></i> Diaľničné známky (SK & CZ)
@@ -251,7 +296,6 @@
 
                 <hr class="border-slate-100">
 
-                <!-- Pravidelný Servis -->
                 <div class="space-y-3">
                     <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
                         <i class="fa-solid fa-wrench text-blue-500"></i> Pravidelný servis & Údržba
@@ -286,20 +330,36 @@
 
     <!-- LOGIKA A SCRIPT -->
     <script>
-        // ÚČTY
         const USERS = {
             "admin": "Podzavoz23!03",
             "sklad": "Podzavoz23!03"
         };
 
-        // GOOGLE APPS SCRIPT ENDPOINT
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjtrmwRfArDrlPNyd01FLqs8qNrY_SxoC6b7Xe28dmmNHod3IY2CeaL-b6C2O789AS/exec";
-        const SYNC_INTERVAL_MS = 12 * 60 * 60 * 1000; // 12 HODÍN
+        const SYNC_INTERVAL_MS = 12 * 60 * 60 * 1000;
 
         let vehicles = [];
         let currentFilter = 'all';
         let lastErrorMsg = '';
         let syncTimer = null;
+
+        // SPECIÁLNA DATABÁZA PRE ZDRAVOTNÍCKU TECHNIKU & INDUSTRIAL PRODUCTS
+        const KNOWN_PRODUCTS = [
+            { keywords: ['celitron', 'sterilizator', 'autoklav', 'autoclave'], name: 'Zdravotnícky parný sterilizátor / Autokláv (Celitron)', hsCode: '8419.20.00', isMedicalDevice: true, category: 'Zdravotnícka pomôcka / technika' },
+            { keywords: ['vmi', 'spectrum', 'x-ray', 'xray', 'rentgen'], name: 'Priemyselný / Zdravotnícky Rtg skener (VMI Spectrum)', hsCode: '9022.14.00', isMedicalDevice: true, category: 'Rtg prístroje a žiarenie' },
+            { keywords: ['steelco', 'disinfector', 'mycka', 'umyvacka'], name: 'Dezinfekčná umývačka zdravotníckeho materiálu (Steelco)', hsCode: '8422.20.00', isMedicalDevice: true, category: 'Dezinfekčné zariadenia' },
+            { keywords: ['xr150', 'pulzný generator', 'golden engineering'], name: 'Prenosný pulzný X-ray generátor', hsCode: '9022.19.00', isMedicalDevice: false, category: 'Priemyselná technika' }
+        ];
+
+        const EU_VAT_RATES = [
+            { flag: '🇸🇰', country: 'Slovensko', code: 'SK', standard: 23, reducedMedical: 5, note: 'Znížená 5% pre zdravotnícku techniku / pomôcky' },
+            { flag: '🇨🇿', country: 'Česko', code: 'CZ', standard: 21, reducedMedical: 12, note: 'Znížená 12% pre zdravotnícke potreby' },
+            { flag: '🇵🇱', country: 'Poľsko', code: 'PL', standard: 23, reducedMedical: 8, note: 'Znížená 8% pre zdravotnícku techniku' },
+            { flag: '🇩🇪', country: 'Nemecko', code: 'DE', standard: 19, reducedMedical: 7, note: 'Znížená 7% pre zdravotnícke artikle' },
+            { flag: '🇦🇹', country: 'Rakúsko', code: 'AT', standard: 20, reducedMedical: 10, note: 'Znížená 10% pre lieky a techniku' },
+            { flag: '🇭🇺', country: 'Maďarsko', code: 'HU', standard: 27, reducedMedical: 5, note: 'Znížená 5% pre špeciálnu zdravotnú techniku' },
+            { flag: '🇮🇹', country: 'Taliansko', code: 'IT', standard: 22, reducedMedical: 4, note: 'Znížená 4% pre ortopedické a zdravotné pomôcky' }
+        ];
 
         window.addEventListener('DOMContentLoaded', () => {
             const loggedUser = localStorage.getItem('km_logged_user');
@@ -342,6 +402,7 @@
                 try { vehicles = JSON.parse(localData); } catch(e){}
             }
             renderVehicles();
+            analyzeProduct();
 
             const lastSyncTime = localStorage.getItem('km_last_sync_time');
             const now = Date.now();
@@ -356,6 +417,97 @@
             syncTimer = setInterval(() => {
                 fetchCloudData(true);
             }, SYNC_INTERVAL_MS);
+        }
+
+        function switchTab(tab) {
+            const vehiclesTab = document.getElementById('vehiclesTab');
+            const vatTab = document.getElementById('vatTab');
+            const btnVehicles = document.getElementById('tabBtnVehicles');
+            const btnVat = document.getElementById('tabBtnVat');
+            const actions = document.getElementById('vehiclesHeaderActions');
+
+            if (tab === 'vehicles') {
+                vehiclesTab.classList.remove('hidden');
+                vatTab.classList.add('hidden');
+                btnVehicles.className = "px-3 py-1.5 rounded-md font-medium bg-blue-600 text-white transition";
+                btnVat.className = "px-3 py-1.5 rounded-md font-medium text-slate-300 hover:text-white transition";
+                actions.classList.remove('hidden');
+            } else {
+                vehiclesTab.classList.add('hidden');
+                vatTab.classList.remove('hidden');
+                btnVat.className = "px-3 py-1.5 rounded-md font-medium bg-blue-600 text-white transition";
+                btnVehicles.className = "px-3 py-1.5 rounded-md font-medium text-slate-300 hover:text-white transition";
+                actions.classList.add('hidden');
+            }
+        }
+
+        function analyzeProduct() {
+            const input = document.getElementById('vatInput').value.toLowerCase().trim();
+            const hsBox = document.getElementById('hsCodeBox');
+            const resultsContainer = document.getElementById('vatResults');
+            
+            resultsContainer.innerHTML = '';
+
+            let foundProduct = null;
+
+            if (input.length > 0) {
+                foundProduct = KNOWN_PRODUCTS.find(p => p.keywords.some(k => input.includes(k)));
+            }
+
+            if (!foundProduct && input.length > 0) {
+                // Všeobecný fallback ak nie je v zozname špecifických značiek
+                foundProduct = {
+                    name: document.getElementById('vatInput').value,
+                    hsCode: '9018.90.00 (Odhad)',
+                    isMedicalDevice: input.includes('zdravot') || input.includes('medica') || input.includes('lekars'),
+                    category: 'Všeobecný tovar / technika'
+                };
+            }
+
+            if (foundProduct) {
+                document.getElementById('productTitle').innerText = foundProduct.name;
+                document.getElementById('productCategory').innerText = `Kategória: ${foundProduct.category} • ${foundProduct.isMedicalDevice ? 'Kvalifikované ako zdravotnícka pomôcka' : 'Štandardný tovar'}`;
+                document.getElementById('hsCodeValue').innerText = foundProduct.hsCode;
+                hsBox.classList.remove('hidden');
+            } else {
+                hsBox.classList.add('hidden');
+            }
+
+            EU_VAT_RATES.forEach(country => {
+                const isMedical = foundProduct ? foundProduct.isMedicalDevice : false;
+                const activeVat = isMedical ? country.reducedMedical : country.standard;
+
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-2xl">${country.flag}</span>
+                            <span class="text-xs font-mono font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded border">${country.code}</span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base">${country.country}</h3>
+                        
+                        <div class="mt-4 space-y-2">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-slate-500">Štandardná sadzba:</span>
+                                <span class="font-bold text-slate-800 text-sm">${country.standard}%</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-slate-500">Sadzba pre zdrav. techniku:</span>
+                                <span class="font-bold text-emerald-600 text-sm">${country.reducedMedical}%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        ${isMedical ? 
+                            `<div class="bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs p-2 rounded-lg font-medium flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-emerald-600"></i> Uplatňuje sa DPH: <b>${activeVat}%</b></div>` :
+                            `<div class="bg-slate-50 text-slate-600 border border-slate-200 text-xs p-2 rounded-lg font-medium flex items-center gap-1.5"><i class="fa-solid fa-tag text-slate-400"></i> Štandardná DPH: <b>${country.standard}%</b></div>`
+                        }
+                    </div>
+                `;
+                resultsContainer.appendChild(card);
+            });
         }
 
         // NAČÍTANIE Z CLOUDU
@@ -581,7 +733,6 @@
                         </div>
 
                         <div class="p-4 space-y-3">
-                            <!-- STK & EK -->
                             <div class="grid grid-cols-2 gap-2 text-xs">
                                 <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                                     <div class="text-slate-500 font-medium mb-1 flex items-center gap-1"><i class="fa-solid fa-shield"></i> STK</div>
@@ -595,7 +746,6 @@
                                 </div>
                             </div>
 
-                            <!-- PZP & Havarijné -->
                             <div class="grid grid-cols-2 gap-2 text-xs">
                                 <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                                     <div class="text-slate-500 font-medium mb-1 flex justify-between items-center">
@@ -617,7 +767,6 @@
                                 </div>
                             </div>
 
-                            <!-- Diaľničné známky -->
                             <div class="grid grid-cols-2 gap-2 text-xs">
                                 <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                                     <div class="text-slate-500 font-medium mb-1 flex justify-between items-center">
@@ -637,7 +786,6 @@
                                 </div>
                             </div>
 
-                            <!-- Servis & Olej -->
                             <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
                                 <div class="text-slate-500 font-medium mb-1 flex items-center justify-between">
                                     <span class="flex items-center gap-1"><i class="fa-solid fa-wrench text-slate-400"></i> Servis & Olej</span>
