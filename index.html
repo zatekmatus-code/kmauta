@@ -144,8 +144,8 @@
                                     <i class="fa-solid fa-brain"></i>
                                 </div>
                                 <div>
-                                    <h2 class="text-lg font-bold text-slate-800">Reálna Gemini AI Klasifikácia & DPH</h2>
-                                    <p class="text-xs text-slate-500">Umelá inteligencia presne určí HS kód tovaru a overí uplatniteľnú DPH podľa legislatívy EÚ.</p>
+                                    <h2 class="text-lg font-bold text-slate-800">Individuálna AI Klasifikácia DPH pre Krajiny EÚ</h2>
+                                    <p class="text-xs text-slate-500">AI samostatne analyzuje legislatívu a sadzbu DPH pre každú krajinu EÚ osobitne.</p>
                                 </div>
                             </div>
                         </div>
@@ -353,13 +353,13 @@
         let syncTimer = null;
 
         const EU_VAT_RATES = [
-            { flag: '🇸🇰', country: 'Slovensko', code: 'SK', standard: 23, reducedMedical: 5 },
-            { flag: '🇨🇿', country: 'Česko', code: 'CZ', standard: 21, reducedMedical: 12 },
-            { flag: '🇵🇱', country: 'Poľsko', code: 'PL', standard: 23, reducedMedical: 8 },
-            { flag: '🇩🇪', country: 'Nemecko', code: 'DE', standard: 19, reducedMedical: 7 },
-            { flag: '🇦🇹', country: 'Rakúsko', code: 'AT', standard: 20, reducedMedical: 10 },
-            { flag: '🇭🇺', country: 'Maďarsko', code: 'HU', standard: 27, reducedMedical: 5 },
-            { flag: '🇮🇹', country: 'Taliansko', code: 'IT', standard: 22, reducedMedical: 4 }
+            { flag: '🇸🇰', country: 'Slovensko', code: 'SK', standard: 23, reducedMedical: 5, note: '5% pre lieky, obväzy, pomôcky' },
+            { flag: '🇨🇿', country: 'Česko', code: 'CZ', standard: 21, reducedMedical: 12, note: '12% pre zdravotnícky materiál' },
+            { flag: '🇵🇱', country: 'Poľsko', code: 'PL', standard: 23, reducedMedical: 8, note: '8% pre vybraný materiál a pomôcky' },
+            { flag: '🇩🇪', country: 'Nemecko', code: 'DE', standard: 19, reducedMedical: 7, note: '7% pre špecifické pacientske pomôcky' },
+            { flag: '🇦🇹', country: 'Rakúsko', code: 'AT', standard: 20, reducedMedical: 10, note: '10% pre lieky a pomôcky' },
+            { flag: '🇭🇺', country: 'Maďarsko', code: 'HU', standard: 27, reducedMedical: 5, note: '5% pre špeciálne pomôcky' },
+            { flag: '🇮🇹', country: 'Taliansko', code: 'IT', standard: 22, reducedMedical: 4, note: '4% pre ortopedické pomôcky' }
         ];
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -459,7 +459,7 @@
 
             if (!input) {
                 hsBox.classList.add('hidden');
-                renderVatCards({ isReducedVatApplies: false, finalVatRateSk: 23 });
+                renderVatCards({ countryVatRates: {} });
                 return;
             }
 
@@ -469,21 +469,31 @@
 
             if (apiKey) {
                 try {
-                    const promptText = `Si legislatívny a colný expert na HS kódy (Harmonizovaný systém) a DPH na Slovensku a v EÚ.
-Analyzuj presne tento produkt: "${input}".
+                    const promptText = `Si legislatívny a colný expert na HS kódy a sadzby DPH v Európskej únii.
+Analyzuj tovar: "${input}".
 
-Dodržiavaj tieto pravidlá slovenskej DPH (Zákon 222/2004 Z.z.):
-1. ZZNÍŽENÁ DPH (5% SK): Všetky obväzy, gázy, hydrofilné obväzy, vata, kompresy, náplaste, lekárske ihly, striekačky, stetoskopy, ortopedické pomôcky, invalidné vozíky, protézy, lieky (HS kód 3005, 3004, 9021, vybrané 9018).
-2. ŠTANDARDNÁ DPH (23% SK): Prístroje, stroje, sterilizátory, autoklávy (Celitron), RTG skenery (VMI Spectrum), dezinfekčné umývačky (Steelco), autá, náradie (HS kód 8419, 8422, 9022).
+Vyhodnoť SAMOSTATNE pre každú krajinu (SK, CZ, PL, DE, AT, HU, IT), či tento tovar v danej krajine podlieha zníženej DPH (alebo štandardnej DPH).
+
+Základné pravidlá:
+- Obväzy, hydrofilná gáza, vata, kompresy, náplaste (HS 3005) -> V SR 5% DPH, v CZ 12% DPH, v PL 8% DPH, atď.
+- Injekčné striekačky, ihly, stetoskopy, pomôcky pre invalidov -> Znížená DPH v väčšine krajín EÚ.
+- Stroje, sterilizátory (Celitron), RTG prístroje (VMI Spectrum), dezinfekčné automaty (Steelco) -> Štandardná DPH (SK 23%, CZ 21%, PL 23%, DE 19%, AT 20%, HU 27%, IT 22%).
 
 Odpovedaj STRICTNE v JSON formáte:
 {
   "productName": "Presný názov tovaru",
-  "hsCode": "Presný HS kód (napr. 3005.90.10 pre obväzy, 8419.20.00 pre sterilizátor)",
-  "category": "Kategória tovaru (napr. Zdravotnícky spotrebný materiál / Zdravotnícky prístroj)",
-  "isReducedVatApplies": true (ak ide o obväz, gázu, vatu, pomôcku) / false (ak ide o stroj, sterilizátor, RTG),
-  "finalVatRateSk": 5 alebo 23,
-  "explanation": "Presné legislatívne zdôvodnenie DPH"
+  "hsCode": "Presný HS kód",
+  "category": "Kategória tovaru",
+  "explanation": "Stručné vysvetlenie pre DPH",
+  "countryVatRates": {
+     "SK": 5,
+     "CZ": 12,
+     "PL": 8,
+     "DE": 7,
+     "AT": 10,
+     "HU": 5,
+     "IT": 4
+  }
 }`;
 
                     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
@@ -501,7 +511,7 @@ Odpovedaj STRICTNE v JSON formáte:
                         aiResult = JSON.parse(cleanedJson);
                     }
                 } catch(e) {
-                    console.warn("Gemini API zlyhalo, spúšťam lokálnu AI analýzu", e);
+                    console.warn("Gemini API zlyhalo, používam lokálnu analýzu", e);
                 }
             }
 
@@ -528,19 +538,17 @@ Odpovedaj STRICTNE v JSON formáte:
                     productName: 'Hydrofilný obväz / Gázový kompres',
                     hsCode: '3005.90.10',
                     category: 'Zdravotnícky spotrebný materiál (Obväzové prostriedky)',
-                    isReducedVatApplies: true,
-                    finalVatRateSk: 5,
-                    explanation: 'Obväzový materiál, hydrofilné obväzy, vata a gáza patria do HS 3005 a podliehajú zníženej 5% sadzbe DPH.'
+                    explanation: 'Obväzový materiál, hydrofilná gáza a vata spadajú pod HS 3005 a v krajinách EÚ podliehajú zníženým sadzbám DPH.',
+                    countryVatRates: { "SK": 5, "CZ": 12, "PL": 8, "DE": 7, "AT": 10, "HU": 5, "IT": 4 }
                 };
             }
             if (q.includes('celitron') || q.includes('steriliza') || q.includes('autoklav') || q.includes('autoclave')) {
                 return {
                     productName: 'Zdravotnícky / Priemyselný sterilizátor (Celitron)',
                     hsCode: '8419.20.00',
-                    category: 'Lekárske, chirurgické alebo laboratórne sterilizátory',
-                    isReducedVatApplies: false,
-                    finalVatRateSk: 23,
-                    explanation: 'Parné sterilizátory a autoklávy sú stroje/zariadenia a podliehajú základnej sadzbe DPH 23 %.'
+                    category: 'Lekárske a chirurgické sterilizátory (Prístroje)',
+                    explanation: 'Parné sterilizátory a autoklávy sú prístrojové zariadenia a vo väčšine krajín podliehajú základnej sadzbe DPH.',
+                    countryVatRates: { "SK": 23, "CZ": 21, "PL": 23, "DE": 19, "AT": 20, "HU": 27, "IT": 22 }
                 };
             }
             if (q.includes('vmi') || q.includes('spectrum') || q.includes('x-ray') || q.includes('rentgen') || q.includes('rtg')) {
@@ -548,9 +556,8 @@ Odpovedaj STRICTNE v JSON formáte:
                     productName: 'Rtg skener / RTG prístroj (VMI Spectrum)',
                     hsCode: '9022.14.00',
                     category: 'Rtg prístroje pre lekárske alebo priemyselné účely',
-                    isReducedVatApplies: false,
-                    finalVatRateSk: 23,
-                    explanation: 'Röntgenové prístroje a skenery podliehajú základnej sadzbe DPH 23 %.'
+                    explanation: 'Röntgenové prístroje podliehajú základnej sadzbe DPH.',
+                    countryVatRates: { "SK": 23, "CZ": 21, "PL": 23, "DE": 19, "AT": 20, "HU": 27, "IT": 22 }
                 };
             }
             if (q.includes('steelco') || q.includes('umyvac') || q.includes('disinfect')) {
@@ -558,9 +565,8 @@ Odpovedaj STRICTNE v JSON formáte:
                     productName: 'Dezinfekčná umývačka nástrojov (Steelco)',
                     hsCode: '8422.20.00',
                     category: 'Zariadenia na čistenie a sterilizáciu nádob/nástrojov',
-                    isReducedVatApplies: false,
-                    finalVatRateSk: 23,
-                    explanation: 'Umývacie a dezinfekčné automaty podliehajú základnej DPH 23 %.'
+                    explanation: 'Umývacie a dezinfekčné automaty podliehajú základnej DPH.',
+                    countryVatRates: { "SK": 23, "CZ": 21, "PL": 23, "DE": 19, "AT": 20, "HU": 27, "IT": 22 }
                 };
             }
             if (q.includes('vozik') || q.includes('invalid') || q.includes('proteza') || q.includes('berla') || q.includes('stetoskop') || q.includes('ihla') || q.includes('strieka')) {
@@ -568,9 +574,8 @@ Odpovedaj STRICTNE v JSON formáte:
                     productName: 'Zdravotnícka pomôcka / materiál',
                     hsCode: '9018.39.00',
                     category: 'Zdravotnícke potreby a pomôcky',
-                    isReducedVatApplies: true,
-                    finalVatRateSk: 5,
-                    explanation: 'Osobné zdravotnícke pomôcky a injekčný/zdravotný materiál podliehajú zníženej 5% sadzbe DPH.'
+                    explanation: 'Injekčné striekačky, ihly a pomôcky pre hendikepované osoby podliehajú zníženým sadzbám DPH.',
+                    countryVatRates: { "SK": 5, "CZ": 12, "PL": 8, "DE": 7, "AT": 10, "HU": 5, "IT": 4 }
                 };
             }
 
@@ -578,9 +583,8 @@ Odpovedaj STRICTNE v JSON formáte:
                 productName: input,
                 hsCode: '9018.90.00',
                 category: 'Všeobecný tovar / technika',
-                isReducedVatApplies: false,
-                finalVatRateSk: 23,
-                explanation: 'Na tento tovar sa uplatňuje štandardná základná sadzba DPH 23 %.'
+                explanation: 'Na tento tovar sa vo všetkých krajinách uplatňuje štandardná základná sadzba DPH.',
+                countryVatRates: { "SK": 23, "CZ": 21, "PL": 23, "DE": 19, "AT": 20, "HU": 27, "IT": 22 }
             };
         }
 
@@ -588,8 +592,11 @@ Odpovedaj STRICTNE v JSON formáte:
             const container = document.getElementById('vatResults');
             container.innerHTML = '';
 
+            const countryRates = aiResult.countryVatRates || {};
+
             EU_VAT_RATES.forEach(country => {
-                const applicableVat = aiResult.isReducedVatApplies ? country.reducedMedical : country.standard;
+                const assignedVat = countryRates[country.code] !== undefined ? countryRates[country.code] : country.standard;
+                const isReduced = assignedVat < country.standard;
 
                 const card = document.createElement('div');
                 card.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition";
@@ -607,16 +614,16 @@ Odpovedaj STRICTNE v JSON formáte:
                                 <span class="font-bold text-slate-800 text-sm">${country.standard}%</span>
                             </div>
                             <div class="flex justify-between items-center text-xs">
-                                <span class="text-slate-500">Znížená sadzba (pomôcky):</span>
+                                <span class="text-slate-500">Znížená sadzba:</span>
                                 <span class="font-bold text-emerald-600 text-sm">${country.reducedMedical}%</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="mt-4 pt-3 border-t border-slate-100">
-                        ${aiResult.isReducedVatApplies ? 
-                            `<div class="bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs p-2.5 rounded-xl font-medium flex items-center justify-between"><span class="flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-emerald-600"></i> Výška DPH:</span> <b class="text-base font-bold text-emerald-700">${applicableVat}%</b></div>` :
-                            `<div class="bg-slate-100 text-slate-800 border border-slate-200 text-xs p-2.5 rounded-xl font-medium flex items-center justify-between"><span class="flex items-center gap-1.5"><i class="fa-solid fa-tag text-slate-500"></i> Výška DPH:</span> <b class="text-base font-bold text-blue-700">${applicableVat}%</b></div>`
+                        ${isReduced ? 
+                            `<div class="bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs p-2.5 rounded-xl font-medium flex items-center justify-between"><span class="flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-emerald-600"></i> Výška DPH:</span> <b class="text-base font-bold text-emerald-700">${assignedVat}%</b></div>` :
+                            `<div class="bg-slate-100 text-slate-800 border border-slate-200 text-xs p-2.5 rounded-xl font-medium flex items-center justify-between"><span class="flex items-center gap-1.5"><i class="fa-solid fa-tag text-slate-500"></i> Výška DPH:</span> <b class="text-base font-bold text-blue-700">${assignedVat}%</b></div>`
                         }
                     </div>
                 `;
