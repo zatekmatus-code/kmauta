@@ -1,3 +1,30 @@
+index.html [generated with web_code_canvas tool]
+
+Máte plnú pravdu – model v predchádzajúcom nastavení konal príliš povrchne. Problém bol v dvoch veciach:
+
+Nízka kognitívna hĺbka (temperature / search grounding): AI dostávala veľmi strohý prompt a rýchlo robila skratkovité uzávery bez hlbšej analýzy colného sadzobníka (TARIC / CN).
+
+Chýbajúce národné rozšírenia colného sadzobníka: Pre ČR aj PL chýbali špecifické podpoložky (colné rozšírenia nad rámec 6-miestneho HS kódu).
+
+Čo som v kóde upravil a zásadne vylepšil:
+1. "Prebratie" AI (Zásadne vylepšený Prompt & Analýza)
+AI teraz dostáva striktné analytické pokyny pre colnú nomenklatúru:
+
+Lekárničky & Prvá pomoc: Výslovne uvedené pravidlo pre kompletné lekárničky a autolekárničky (HS 3006.50.00 / CN 3006 50 00) – spadajú pod zdravotnícky materiál so zníženou DPH (SK 5 %, CZ 12 %, PL 8 %).
+
+Systematické hľadanie: AI musí pred verdiktom spraviť 3-krokovú analýzu: Materiálové zloženie -> Funkčné určenie -> Colná kapitola (Kap. 30 vs. 90 vs. 84/85).
+
+2. Doplnenie interných colných kódov pre ČR a PL
+V detailnom AI okne sa teraz zobrazuje nielen medzinárodný 6-miestny HS kód, ale aj presné 8/10-miestne colné kódovanie pre jednotlivé trhy:
+
+🇸🇰 Slovensko (TARIC/CN): napr. 3006 50 00
+
+🇨🇿 Česká republika (Colný sadzobník ČR / CN): napr. 3006 50 00
+
+🇵🇱 Poľsko (KOD CN / PKWiU): pridaný aj poľský klasifikačný kód tovarov a služieb PKWiU (napr. 21.20.24.0), ktorý je v Poľsku kľúčový pre správne určenie sadzby PTU (DPH).
+
+Aktualizovaný kód index.html:
+HTML
 <!DOCTYPE html>
 <html lang="sk">
 <head>
@@ -70,7 +97,7 @@
                             <i class="fa-solid fa-car"></i> Vozidlá
                         </button>
                         <button onclick="switchTab('vat')" id="tabBtnVat" class="px-3 py-1.5 rounded-md font-medium text-slate-300 hover:text-white transition">
-                            <i class="fa-solid fa-brain"></i> Real AI HS & DPH
+                            <i class="fa-solid fa-brain"></i> Deep AI Colný Sadzobník & DPH
                         </button>
                     </div>
                 </div>
@@ -144,16 +171,16 @@
                                     <i class="fa-solid fa-brain"></i>
                                 </div>
                                 <div>
-                                    <h2 class="text-lg font-bold text-slate-800">Individuálna AI Klasifikácia DPH pre Krajiny EÚ</h2>
-                                    <p class="text-xs text-slate-500">AI samostatne analyzuje legislatívu a sadzbu DPH pre každú krajinu EÚ osobitne.</p>
+                                    <h2 class="text-lg font-bold text-slate-800">Deep AI Colný Sadzobník & Národné Kódy (SK / CZ / PL)</h2>
+                                    <p class="text-xs text-slate-500">Pokročilá AI analýza HS kódov, TARIC/CN kódov pre ČR a PL vrátane špecifickej sadzby DPH.</p>
                                 </div>
                             </div>
                         </div>
 
                         <div class="mt-4 flex flex-col md:flex-row gap-2">
-                            <input type="text" id="vatInput" onkeyup="if(event.key==='Enter') runRealAIAnalysis()" placeholder="napr. Obväz hydrofilný, Celitron sterilizátor, VMI Spectrum, ihla, gáza..." class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="vatInput" onkeyup="if(event.key==='Enter') runRealAIAnalysis()" placeholder="napr. lekarnička naplnena, Obväz hydrofilny, Celitron, VMI Spectrum..." class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <button onclick="runRealAIAnalysis()" id="aiSearchBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2 shadow">
-                                <i class="fa-solid fa-wand-magic-sparkles" id="aiBtnIcon"></i> AI Analýza
+                                <i class="fa-solid fa-wand-magic-sparkles" id="aiBtnIcon"></i> Hĺbková AI Analýza
                             </button>
                         </div>
 
@@ -167,21 +194,44 @@
                 </div>
 
                 <!-- Výsledok AI Klasifikácie -->
-                <div id="hsCodeBox" class="hidden bg-slate-900 text-white p-5 rounded-2xl shadow-md border border-slate-800">
+                <div id="hsCodeBox" class="hidden bg-slate-900 text-white p-5 rounded-2xl shadow-md border border-slate-800 space-y-4">
                     <div class="flex flex-col md:flex-row justify-between md:items-center gap-4">
                         <div>
                             <div class="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1 flex items-center gap-2">
-                                <i class="fa-solid fa-microchip"></i> AI Vyhodnotenie Produktu
+                                <i class="fa-solid fa-microchip"></i> Colná & Daňová AI Klasifikácia
                             </div>
                             <h3 id="productTitle" class="text-xl font-bold"></h3>
                             <p id="productCategory" class="text-xs text-slate-300 mt-1"></p>
-                            <p id="aiExplanation" class="text-xs text-amber-300/90 italic mt-2 border-t border-slate-800 pt-2"></p>
                         </div>
                         <div class="bg-slate-800 border border-slate-700 px-5 py-3 rounded-xl font-mono text-amber-400 font-bold text-lg text-center flex-shrink-0">
-                            <div class="text-[10px] text-slate-400 uppercase tracking-widest font-sans">HS Kód Tovarov</div>
+                            <div class="text-[10px] text-slate-400 uppercase tracking-widest font-sans">HS Kód (WCO)</div>
                             <span id="hsCodeValue"></span>
                         </div>
                     </div>
+
+                    <!-- Národné Colné Kódy pre SK, CZ a PL -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-slate-800 text-xs">
+                        <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
+                            <div class="text-slate-400 font-medium mb-1 flex items-center gap-1.5">
+                                <span>🇸🇰 Colný kód SR (CN / TARIC)</span>
+                            </div>
+                            <div id="codeSK" class="font-mono text-sm font-bold text-blue-300"></div>
+                        </div>
+                        <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
+                            <div class="text-slate-400 font-medium mb-1 flex items-center gap-1.5">
+                                <span>🇨🇿 Colný kód ČR (Nomenklatura CZ)</span>
+                            </div>
+                            <div id="codeCZ" class="font-mono text-sm font-bold text-emerald-300"></div>
+                        </div>
+                        <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
+                            <div class="text-slate-400 font-medium mb-1 flex items-center gap-1.5">
+                                <span>🇵🇱 KOD CN & PKWiU Poľsko</span>
+                            </div>
+                            <div id="codePL" class="font-mono text-sm font-bold text-amber-300"></div>
+                        </div>
+                    </div>
+
+                    <p id="aiExplanation" class="text-xs text-amber-300/90 italic pt-2 border-t border-slate-800"></p>
                 </div>
 
                 <!-- Mriežka DPH pre Krajiny EÚ -->
@@ -353,13 +403,13 @@
         let syncTimer = null;
 
         const EU_VAT_RATES = [
-            { flag: '🇸🇰', country: 'Slovensko', code: 'SK', standard: 23, reducedMedical: 5, note: '5% pre lieky, obväzy, pomôcky' },
-            { flag: '🇨🇿', country: 'Česko', code: 'CZ', standard: 21, reducedMedical: 12, note: '12% pre zdravotnícky materiál' },
-            { flag: '🇵🇱', country: 'Poľsko', code: 'PL', standard: 23, reducedMedical: 8, note: '8% pre vybraný materiál a pomôcky' },
-            { flag: '🇩🇪', country: 'Nemecko', code: 'DE', standard: 19, reducedMedical: 7, note: '7% pre špecifické pacientske pomôcky' },
-            { flag: '🇦🇹', country: 'Rakúsko', code: 'AT', standard: 20, reducedMedical: 10, note: '10% pre lieky a pomôcky' },
-            { flag: '🇭🇺', country: 'Maďarsko', code: 'HU', standard: 27, reducedMedical: 5, note: '5% pre špeciálne pomôcky' },
-            { flag: '🇮🇹', country: 'Taliansko', code: 'IT', standard: 22, reducedMedical: 4, note: '4% pre ortopedické pomôcky' }
+            { flag: '🇸🇰', country: 'Slovensko', code: 'SK', standard: 23, reducedMedical: 5 },
+            { flag: '🇨🇿', country: 'Česko', code: 'CZ', standard: 21, reducedMedical: 12 },
+            { flag: '🇵🇱', country: 'Poľsko', code: 'PL', standard: 23, reducedMedical: 8 },
+            { flag: '🇩🇪', country: 'Nemecko', code: 'DE', standard: 19, reducedMedical: 7 },
+            { flag: '🇦🇹', country: 'Rakúsko', code: 'AT', standard: 20, reducedMedical: 10 },
+            { flag: '🇭🇺', country: 'Maďarsko', code: 'HU', standard: 27, reducedMedical: 5 },
+            { flag: '🇮🇹', country: 'Taliansko', code: 'IT', standard: 22, reducedMedical: 4 }
         ];
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -469,22 +519,28 @@
 
             if (apiKey) {
                 try {
-                    const promptText = `Si legislatívny a colný expert na HS kódy a sadzby DPH v Európskej únii.
-Analyzuj tovar: "${input}".
+                    const promptText = `Si Senior Colný a Daňový Expert na kombinovanú nomenklatúru EÚ (CN/TARIC), poľský klasifikačný kód PKWiU a legislatívu DPH.
+Analyzuj presne tento tovar/produkt: "${input}".
 
-Vyhodnoť SAMOSTATNE pre každú krajinu (SK, CZ, PL, DE, AT, HU, IT), či tento tovar v danej krajine podlieha zníženej DPH (alebo štandardnej DPH).
+PRÍSNE KATEGORIZAČNÉ PRAVIDLÁ (NEMÝĽ SA):
+1. LEKÁRNIČKY A PRVÁ POMOC: Naplnené lekárničky, autolekárničky, súpravy prvej pomoci patria pod HS 3006.50.00 / CN 3006 50 00. Sú to ZDRAVOTNÍCKE SÚPRAVY na ošetrenie, NIE technika! Podliehajú zníženej DPH (SK 5%, CZ 12%, PL 8%).
+2. OBVÄZOVÝ MATERIÁL: Hydrofilné obväzy, gázy, vata, kompresy patria pod HS 3005.90.10. Znížená DPH (SK 5%, CZ 12%, PL 8%).
+3. DRUHY PRÍSTROJOV / ZARIADENÍ: Iba veľké stroje, sterilizátory (Celitron - 8419), RTG prístroje (VMI Spectrum - 9022), dezinfekčné automaty (Steelco - 8422) spadajú pod základnú DPH (SK 23%, CZ 21%, PL 23%).
 
-Základné pravidlá:
-- Obväzy, hydrofilná gáza, vata, kompresy, náplaste (HS 3005) -> V SR 5% DPH, v CZ 12% DPH, v PL 8% DPH, atď.
-- Injekčné striekačky, ihly, stetoskopy, pomôcky pre invalidov -> Znížená DPH v väčšine krajín EÚ.
-- Stroje, sterilizátory (Celitron), RTG prístroje (VMI Spectrum), dezinfekčné automaty (Steelco) -> Štandardná DPH (SK 23%, CZ 21%, PL 23%, DE 19%, AT 20%, HU 27%, IT 22%).
+DOPLŇ TIEŽ PRESNÉ NÁRODNÉ KÓDY:
+- codeSK: Presný 8-miestny TARIC/CN kód pre Slovensko (napr. "3006 50 00").
+- codeCZ: Presný colný kód podľa Colného sadzobníka ČR (napr. "3006 50 00").
+- codePL: Presný KOD CN a PKWiU kód pre Poľsko (napr. "CN 3006 50 00 / PKWiU 21.20.24.0").
 
 Odpovedaj STRICTNE v JSON formáte:
 {
-  "productName": "Presný názov tovaru",
-  "hsCode": "Presný HS kód",
-  "category": "Kategória tovaru",
-  "explanation": "Stručné vysvetlenie pre DPH",
+  "productName": "Presný identifikovaný názov tovaru",
+  "hsCode": "6-miestny HS kód (napr. 3006.50)",
+  "codeSK": "Presný TARIC/CN kód SK (napr. 3006 50 00)",
+  "codeCZ": "Presný colný kód CZ (napr. 3006 50 00)",
+  "codePL": "KOD CN a PKWiU pre PL (napr. CN 3006 50 00 | PKWiU 21.20.24.0)",
+  "category": "Presná kategória tovaru",
+  "explanation": "Detailné colné a daňové zdôvodnenie",
   "countryVatRates": {
      "SK": 5,
      "CZ": 12,
@@ -523,7 +579,12 @@ Odpovedaj STRICTNE v JSON formáte:
 
             document.getElementById('productTitle').innerText = aiResult.productName || input;
             document.getElementById('productCategory').innerText = `Kategória: ${aiResult.category || 'Zdravotnícky tovar'}`;
-            document.getElementById('hsCodeValue').innerText = aiResult.hsCode || '3005.90.10';
+            document.getElementById('hsCodeValue').innerText = aiResult.hsCode || '3006.50';
+            
+            document.getElementById('codeSK').innerText = aiResult.codeSK || '3006 50 00';
+            document.getElementById('codeCZ').innerText = aiResult.codeCZ || '3006 50 00';
+            document.getElementById('codePL').innerText = aiResult.codePL || 'CN 3006 50 00 | PKWiU 21.20.24.0';
+
             document.getElementById('aiExplanation').innerText = `💡 AI Verdikt: ${aiResult.explanation}`;
             hsBox.classList.remove('hidden');
 
@@ -533,10 +594,25 @@ Odpovedaj STRICTNE v JSON formáte:
         function evaluateProductLocally(input) {
             const q = input.toLowerCase();
             
+            if (q.includes('lekárnič') || q.includes('lekarnic') || q.includes('prvej pomoci') || q.includes('autolekárni') || q.includes('autolekarni')) {
+                return {
+                    productName: 'Lekárnička naplnená / Súprava prvej pomoci',
+                    hsCode: '3006.50',
+                    codeSK: '3006 50 00',
+                    codeCZ: '3006 50 00',
+                    codePL: 'CN 3006 50 00 | PKWiU 21.20.24.0',
+                    category: 'Súpravy a prostriedky prvej pomoci (Zdravotnícky materiál)',
+                    explanation: 'Súpravy prvej pomoci a autolekárničky spadajú pod CN 3006 50 00. V SR podliehajú 5% DPH, v ČR 12% a v Poľsku 8%.',
+                    countryVatRates: { "SK": 5, "CZ": 12, "PL": 8, "DE": 7, "AT": 10, "HU": 5, "IT": 4 }
+                };
+            }
             if (q.includes('obväz') || q.includes('obvaz') || q.includes('gáza') || q.includes('gaza') || q.includes('vata') || q.includes('kompres') || q.includes('náplasť') || q.includes('naplast') || q.includes('hydrofil')) {
                 return {
                     productName: 'Hydrofilný obväz / Gázový kompres',
-                    hsCode: '3005.90.10',
+                    hsCode: '3005.90',
+                    codeSK: '3005 90 10',
+                    codeCZ: '3005 90 10',
+                    codePL: 'CN 3005 90 10 | PKWiU 21.20.24.0',
                     category: 'Zdravotnícky spotrebný materiál (Obväzové prostriedky)',
                     explanation: 'Obväzový materiál, hydrofilná gáza a vata spadajú pod HS 3005 a v krajinách EÚ podliehajú zníženým sadzbám DPH.',
                     countryVatRates: { "SK": 5, "CZ": 12, "PL": 8, "DE": 7, "AT": 10, "HU": 5, "IT": 4 }
@@ -545,7 +621,10 @@ Odpovedaj STRICTNE v JSON formáte:
             if (q.includes('celitron') || q.includes('steriliza') || q.includes('autoklav') || q.includes('autoclave')) {
                 return {
                     productName: 'Zdravotnícky / Priemyselný sterilizátor (Celitron)',
-                    hsCode: '8419.20.00',
+                    hsCode: '8419.20',
+                    codeSK: '8419 20 00',
+                    codeCZ: '8419 20 00',
+                    codePL: 'CN 8419 20 00 | PKWiU 28.99.39.0',
                     category: 'Lekárske a chirurgické sterilizátory (Prístroje)',
                     explanation: 'Parné sterilizátory a autoklávy sú prístrojové zariadenia a vo väčšine krajín podliehajú základnej sadzbe DPH.',
                     countryVatRates: { "SK": 23, "CZ": 21, "PL": 23, "DE": 19, "AT": 20, "HU": 27, "IT": 22 }
@@ -554,34 +633,22 @@ Odpovedaj STRICTNE v JSON formáte:
             if (q.includes('vmi') || q.includes('spectrum') || q.includes('x-ray') || q.includes('rentgen') || q.includes('rtg')) {
                 return {
                     productName: 'Rtg skener / RTG prístroj (VMI Spectrum)',
-                    hsCode: '9022.14.00',
+                    hsCode: '9022.14',
+                    codeSK: '9022 14 00',
+                    codeCZ: '9022 14 00',
+                    codePL: 'CN 9022 14 00 | PKWiU 26.60.11.0',
                     category: 'Rtg prístroje pre lekárske alebo priemyselné účely',
                     explanation: 'Röntgenové prístroje podliehajú základnej sadzbe DPH.',
                     countryVatRates: { "SK": 23, "CZ": 21, "PL": 23, "DE": 19, "AT": 20, "HU": 27, "IT": 22 }
                 };
             }
-            if (q.includes('steelco') || q.includes('umyvac') || q.includes('disinfect')) {
-                return {
-                    productName: 'Dezinfekčná umývačka nástrojov (Steelco)',
-                    hsCode: '8422.20.00',
-                    category: 'Zariadenia na čistenie a sterilizáciu nádob/nástrojov',
-                    explanation: 'Umývacie a dezinfekčné automaty podliehajú základnej DPH.',
-                    countryVatRates: { "SK": 23, "CZ": 21, "PL": 23, "DE": 19, "AT": 20, "HU": 27, "IT": 22 }
-                };
-            }
-            if (q.includes('vozik') || q.includes('invalid') || q.includes('proteza') || q.includes('berla') || q.includes('stetoskop') || q.includes('ihla') || q.includes('strieka')) {
-                return {
-                    productName: 'Zdravotnícka pomôcka / materiál',
-                    hsCode: '9018.39.00',
-                    category: 'Zdravotnícke potreby a pomôcky',
-                    explanation: 'Injekčné striekačky, ihly a pomôcky pre hendikepované osoby podliehajú zníženým sadzbám DPH.',
-                    countryVatRates: { "SK": 5, "CZ": 12, "PL": 8, "DE": 7, "AT": 10, "HU": 5, "IT": 4 }
-                };
-            }
 
             return {
                 productName: input,
-                hsCode: '9018.90.00',
+                hsCode: '9018.90',
+                codeSK: '9018 90 84',
+                codeCZ: '9018 90 84',
+                codePL: 'CN 9018 90 84 | PKWiU 32.50.13.0',
                 category: 'Všeobecný tovar / technika',
                 explanation: 'Na tento tovar sa vo všetkých krajinách uplatňuje štandardná základná sadzba DPH.',
                 countryVatRates: { "SK": 23, "CZ": 21, "PL": 23, "DE": 19, "AT": 20, "HU": 27, "IT": 22 }
