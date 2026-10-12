@@ -64,7 +64,7 @@
                 </div>
 
                 <div class="flex items-center space-x-2 w-full md:w-auto justify-end overflow-x-auto pb-1 md:pb-0">
-                    <button onclick="fetchCloudData()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded border border-slate-700 flex items-center gap-1 transition" title="Načítať najnovšie dáta z cloudu">
+                    <button onclick="fetchCloudData(true)" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded border border-slate-700 flex items-center gap-1 transition" title="Načítať najnovšie dáta z cloudu">
                         <i class="fa-solid fa-rotate" id="syncIcon"></i> Obnoviť
                     </button>
                     <button onclick="exportData()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded border border-slate-700 flex items-center gap-1 transition">
@@ -89,7 +89,7 @@
             <!-- Informačné oznamy o stave cloudu -->
             <div id="syncStatusBanner" class="hidden mb-4 p-3 text-xs text-center rounded-xl border font-medium transition-all"></div>
 
-            <!-- Upozorňovací Banner na vypršanie STK/EK/DZ -->
+            <!-- Upozorňovací Banner na vypršanie STK/EK/DZ/Poistenia -->
             <div id="alertBanner" class="hidden mb-6 p-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 shadow-sm">
                 <div class="flex items-start gap-3">
                     <i class="fa-solid fa-triangle-exclamation text-amber-600 text-xl mt-0.5"></i>
@@ -145,7 +145,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">EČV / ŠPZ *</label>
-                        <input type="text" id="ecv" required placeholder="napr. ZA123AB" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm uppercase tracking-wider font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <input type="text" id="ecv" required placeholder="napr. CA123AB" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm uppercase tracking-wider font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Zodpovedný za vozidlo</label>
@@ -168,6 +168,53 @@
                         <div>
                             <label class="block text-xs font-medium text-slate-600 mb-1">EK - Konec platnosti</label>
                             <input type="date" id="ekDate" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-slate-100">
+
+                <!-- PZP & Havarijné Poistenie -->
+                <div class="space-y-3">
+                    <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <i class="fa-solid fa-file-contract text-blue-500"></i> PZP & Havarijné Poistenie
+                    </h3>
+                    
+                    <!-- PZP -->
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+                        <div class="text-xs font-bold text-slate-700">PZP (Povinné zmluvné poistenie)</div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-0.5">Názov poisťovne</label>
+                                <input type="text" id="pzpName" placeholder="napr. Allianz, Kooperativa" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-0.5">Číslo zmluvy</label>
+                                <input type="text" id="pzpNum" placeholder="123456789" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-0.5">Koniec platnosti</label>
+                                <input type="date" id="pzpDate" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Havarijné -->
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+                        <div class="text-xs font-bold text-slate-700">Havarijné poistenie (Kasko)</div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-0.5">Názov poisťovne</label>
+                                <input type="text" id="kaskoName" placeholder="napr. Generali, Uniqa" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-0.5">Číslo zmluvy</label>
+                                <input type="text" id="kaskoNum" placeholder="987654321" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-0.5">Koniec platnosti</label>
+                                <input type="date" id="kaskoDate" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -234,12 +281,14 @@
             "sklad": "Podzavoz23!03"
         };
 
-        // VÁŠ SÚKROMNÝ GOOGLE APPS SCRIPT ENDPOINT
+        // GOOGLE APPS SCRIPT ENDPOINT
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjtrmwRfArDrlPNyd01FLqs8qNrY_SxoC6b7Xe28dmmNHod3IY2CeaL-b6C2O789AS/exec";
+        const SYNC_INTERVAL_MS = 12 * 60 * 60 * 1000; // 12 HODÍN
 
         let vehicles = [];
         let currentFilter = 'all';
         let lastErrorMsg = '';
+        let syncTimer = null;
 
         window.addEventListener('DOMContentLoaded', () => {
             const loggedUser = localStorage.getItem('km_logged_user');
@@ -264,6 +313,7 @@
         }
 
         function handleLogout() {
+            if (syncTimer) clearInterval(syncTimer);
             localStorage.removeItem('km_logged_user');
             document.getElementById('appScreen').classList.add('hidden');
             document.getElementById('loginScreen').classList.remove('hidden');
@@ -276,17 +326,29 @@
             document.getElementById('appScreen').classList.remove('hidden');
             document.getElementById('currentUserBadge').innerText = `Prihlásený: ${username}`;
             
-            // Načítanie lokálnej zálohy prehliadača
             const localData = localStorage.getItem('km_vehicles_data');
             if (localData) {
                 try { vehicles = JSON.parse(localData); } catch(e){}
             }
             renderVehicles();
-            fetchCloudData();
+
+            const lastSyncTime = localStorage.getItem('km_last_sync_time');
+            const now = Date.now();
+
+            if (!lastSyncTime || (now - parseInt(lastSyncTime, 10)) > SYNC_INTERVAL_MS) {
+                fetchCloudData(true);
+            } else {
+                setCloudBadge('ok', 'Synced (Lokálne)');
+            }
+
+            if (syncTimer) clearInterval(syncTimer);
+            syncTimer = setInterval(() => {
+                fetchCloudData(true);
+            }, SYNC_INTERVAL_MS);
         }
 
-        // NAČÍTANIE Z GOOGLE SCRIPT CLOUDU
-        async function fetchCloudData() {
+        // NAČÍTANIE Z CLOUDU
+        async function fetchCloudData(force = false) {
             setCloudBadge('syncing', 'Synchronizujem...');
             const syncIcon = document.getElementById('syncIcon');
             if (syncIcon) syncIcon.classList.add('fa-spin');
@@ -304,16 +366,17 @@
                         if (data && Array.isArray(data.vehicles) && data.vehicles.length > 0) {
                             vehicles = data.vehicles;
                             localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
+                            localStorage.setItem('km_last_sync_time', Date.now().toString());
                             setCloudBadge('ok', 'Synced');
                             lastErrorMsg = '';
                         } else if (vehicles.length > 0) {
-                            // Ak je cloud prázdny, odošle lokálne dáta
                             await saveCloudData();
                         } else {
                             setCloudBadge('ok', 'Synced');
+                            localStorage.setItem('km_last_sync_time', Date.now().toString());
                         }
                     } catch(jsonErr) {
-                        lastErrorMsg = "Odpoveď nie je platný JSON. Uistite sa, že Web App ma prístup 'Anyone'.";
+                        lastErrorMsg = "Odpoveď nie je platný JSON.";
                         setCloudBadge('error', 'Chyba formátu');
                     }
                 } else {
@@ -330,7 +393,7 @@
             }
         }
 
-        // ULOŽENIE DO GOOGLE SCRIPT CLOUDU
+        // ULOŽENIE DO CLOUDU
         async function saveCloudData() {
             localStorage.setItem('km_vehicles_data', JSON.stringify(vehicles));
             setCloudBadge('syncing', 'Ukladám...');
@@ -345,6 +408,7 @@
                     body: payload
                 });
 
+                localStorage.setItem('km_last_sync_time', Date.now().toString());
                 setCloudBadge('ok', 'Uložené v cloude');
                 showBannerMsg('Dáta boli úspešne zosynchronizované s cloudom!', 'success');
                 lastErrorMsg = '';
@@ -356,10 +420,16 @@
         }
 
         function showLastError() {
+            const lastSync = localStorage.getItem('km_last_sync_time');
+            let timeStr = 'Nikdy';
+            if (lastSync) {
+                timeStr = new Date(parseInt(lastSync, 10)).toLocaleString('sk-SK');
+            }
+
             if (lastErrorMsg) {
-                alert("Detail stavu pripojenia:\n\n" + lastErrorMsg);
+                alert(`Detail stavu pripojenia:\n\nPosledná synchronizácia: ${timeStr}\nChyba: ${lastErrorMsg}`);
             } else {
-                alert("Pripojenie k vášmu Google Cloudu je v poriadku!");
+                alert(`Pripojenie k cloudu je v poriadku!\nPosledná úspešná synchronizácia: ${timeStr}`);
             }
         }
 
@@ -417,7 +487,11 @@
             let filtered = vehicles.filter(v => 
                 v.name.toLowerCase().includes(searchVal) || 
                 v.ecv.toLowerCase().includes(searchVal) ||
-                (v.responsible && v.responsible.toLowerCase().includes(searchVal))
+                (v.responsible && v.responsible.toLowerCase().includes(searchVal)) ||
+                (v.pzpName && v.pzpName.toLowerCase().includes(searchVal)) ||
+                (v.pzpNum && v.pzpNum.toLowerCase().includes(searchVal)) ||
+                (v.kaskoName && v.kaskoName.toLowerCase().includes(searchVal)) ||
+                (v.kaskoNum && v.kaskoNum.toLowerCase().includes(searchVal))
             );
 
             if (currentFilter === 'warning') {
@@ -426,7 +500,11 @@
                     const ek = getDaysDiff(v.ekDate);
                     const dzSk = getDaysDiff(v.dzSkDate);
                     const dzCz = getDaysDiff(v.dzCzDate);
-                    return (stk !== null && stk <= 30) || (ek !== null && ek <= 30) || (dzSk !== null && dzSk <= 30) || (dzCz !== null && dzCz <= 30);
+                    const pzp = getDaysDiff(v.pzpDate);
+                    const kasko = getDaysDiff(v.kaskoDate);
+                    return (stk !== null && stk <= 30) || (ek !== null && ek <= 30) || 
+                           (dzSk !== null && dzSk <= 30) || (dzCz !== null && dzCz <= 30) ||
+                           (pzp !== null && pzp <= 30) || (kasko !== null && kasko <= 30);
                 });
             } else if (currentFilter === 'expired') {
                 filtered = filtered.filter(v => {
@@ -434,7 +512,11 @@
                     const ek = getDaysDiff(v.ekDate);
                     const dzSk = getDaysDiff(v.dzSkDate);
                     const dzCz = getDaysDiff(v.dzCzDate);
-                    return (stk !== null && stk < 0) || (ek !== null && ek < 0) || (dzSk !== null && dzSk < 0) || (dzCz !== null && dzCz < 0);
+                    const pzp = getDaysDiff(v.pzpDate);
+                    const kasko = getDaysDiff(v.kaskoDate);
+                    return (stk !== null && stk < 0) || (ek !== null && ek < 0) || 
+                           (dzSk !== null && dzSk < 0) || (dzCz !== null && dzCz < 0) ||
+                           (pzp !== null && pzp < 0) || (kasko !== null && kasko < 0);
                 });
             }
 
@@ -451,16 +533,22 @@
                 const ekDays = getDaysDiff(v.ekDate);
                 const dzSkDays = getDaysDiff(v.dzSkDate);
                 const dzCzDays = getDaysDiff(v.dzCzDate);
+                const pzpDays = getDaysDiff(v.pzpDate);
+                const kaskoDays = getDaysDiff(v.kaskoDate);
 
                 const stkStatus = getStatusInfo(stkDays);
                 const ekStatus = getStatusInfo(ekDays);
                 const dzSkStatus = getStatusInfo(dzSkDays);
                 const dzCzStatus = getStatusInfo(dzCzDays);
+                const pzpStatus = getStatusInfo(pzpDays);
+                const kaskoStatus = getStatusInfo(kaskoDays);
 
                 if (stkDays !== null && stkDays <= 30) alertMessages.push(`<b>${v.name} (${v.ecv})</b>: STK o ${stkDays}d`);
                 if (ekDays !== null && ekDays <= 30) alertMessages.push(`<b>${v.name} (${v.ecv})</b>: EK o ${ekDays}d`);
                 if (dzSkDays !== null && dzSkDays <= 30) alertMessages.push(`<b>${v.name} (${v.ecv})</b>: SK známka o ${dzSkDays}d`);
                 if (dzCzDays !== null && dzCzDays <= 30) alertMessages.push(`<b>${v.name} (${v.ecv})</b>: CZ známka o ${dzCzDays}d`);
+                if (pzpDays !== null && pzpDays <= 30) alertMessages.push(`<b>${v.name} (${v.ecv})</b>: PZP o ${pzpDays}d`);
+                if (kaskoDays !== null && kaskoDays <= 30) alertMessages.push(`<b>${v.name} (${v.ecv})</b>: Havarijné o ${kaskoDays}d`);
 
                 const card = document.createElement('div');
                 card.className = "bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition flex flex-col justify-between";
@@ -482,6 +570,7 @@
                         </div>
 
                         <div class="p-4 space-y-3">
+                            <!-- STK & EK -->
                             <div class="grid grid-cols-2 gap-2 text-xs">
                                 <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                                     <div class="text-slate-500 font-medium mb-1 flex items-center gap-1"><i class="fa-solid fa-shield"></i> STK</div>
@@ -495,6 +584,29 @@
                                 </div>
                             </div>
 
+                            <!-- PZP & Havarijné -->
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                    <div class="text-slate-500 font-medium mb-1 flex justify-between items-center">
+                                        <span class="truncate"><i class="fa-solid fa-file-contract text-blue-500"></i> PZP</span>
+                                        <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold ${pzpStatus.class}">${pzpStatus.text}</span>
+                                    </div>
+                                    <div class="font-bold text-slate-700 text-[11px] truncate">${v.pzpName || 'Nezadané'}</div>
+                                    <div class="text-[10px] text-slate-500 font-mono">Č.zm: ${v.pzpNum || '-'}</div>
+                                    <div class="text-[10px] text-slate-400 mt-0.5">Do: ${v.pzpDate || '-'}</div>
+                                </div>
+                                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                    <div class="text-slate-500 font-medium mb-1 flex justify-between items-center">
+                                        <span class="truncate"><i class="fa-solid fa-car-burst text-indigo-500"></i> Havarijné</span>
+                                        <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold ${kaskoStatus.class}">${kaskoStatus.text}</span>
+                                    </div>
+                                    <div class="font-bold text-slate-700 text-[11px] truncate">${v.kaskoName || 'Nezadané'}</div>
+                                    <div class="text-[10px] text-slate-500 font-mono">Č.zm: ${v.kaskoNum || '-'}</div>
+                                    <div class="text-[10px] text-slate-400 mt-0.5">Do: ${v.kaskoDate || '-'}</div>
+                                </div>
+                            </div>
+
+                            <!-- Diaľničné známky -->
                             <div class="grid grid-cols-2 gap-2 text-xs">
                                 <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                                     <div class="text-slate-500 font-medium mb-1 flex justify-between items-center">
@@ -514,6 +626,7 @@
                                 </div>
                             </div>
 
+                            <!-- Servis & Olej -->
                             <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
                                 <div class="text-slate-500 font-medium mb-1 flex items-center justify-between">
                                     <span class="flex items-center gap-1"><i class="fa-solid fa-wrench text-slate-400"></i> Servis & Olej</span>
@@ -572,6 +685,12 @@
             document.getElementById('responsible').value = v.responsible || '';
             document.getElementById('stkDate').value = v.stkDate || '';
             document.getElementById('ekDate').value = v.ekDate || '';
+            document.getElementById('pzpName').value = v.pzpName || '';
+            document.getElementById('pzpNum').value = v.pzpNum || '';
+            document.getElementById('pzpDate').value = v.pzpDate || '';
+            document.getElementById('kaskoName').value = v.kaskoName || '';
+            document.getElementById('kaskoNum').value = v.kaskoNum || '';
+            document.getElementById('kaskoDate').value = v.kaskoDate || '';
             document.getElementById('dzSkDate').value = v.dzSkDate || '';
             document.getElementById('dzCzDate').value = v.dzCzDate || '';
             document.getElementById('serviceDate').value = v.serviceDate || '';
@@ -593,6 +712,12 @@
                 responsible: document.getElementById('responsible').value,
                 stkDate: document.getElementById('stkDate').value,
                 ekDate: document.getElementById('ekDate').value,
+                pzpName: document.getElementById('pzpName').value,
+                pzpNum: document.getElementById('pzpNum').value,
+                pzpDate: document.getElementById('pzpDate').value,
+                kaskoName: document.getElementById('kaskoName').value,
+                kaskoNum: document.getElementById('kaskoNum').value,
+                kaskoDate: document.getElementById('kaskoDate').value,
                 dzSkDate: document.getElementById('dzSkDate').value,
                 dzCzDate: document.getElementById('dzCzDate').value,
                 serviceDate: document.getElementById('serviceDate').value,
